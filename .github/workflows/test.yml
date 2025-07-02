@@ -39,11 +39,11 @@ jobs:
         
         # Test core imports
         python -c "from vcs import compute_vcs_score; print('✅ Main function importable')"
-        python -c "from vcs._config import DEFAULT_CONTEXT_CUTOFF_PERCENTAGE; print('✅ Config module imports')"
+        python -c "from vcs._config import DEFAULT_CONTEXT_CUTOFF_VALUE; print('✅ Config module imports')"
         python -c "from vcs._utils._utils import _calculate_f1; print('✅ Utilities module imports')"
         
         # Test configuration validation
-        python -c "from vcs._config import DEFAULT_CONTEXT_CUTOFF_PERCENTAGE; assert 0 < DEFAULT_CONTEXT_CUTOFF_PERCENTAGE < 1; print('✅ Config values are valid')"
+        python -c "from vcs._config import DEFAULT_CONTEXT_CUTOFF_VALUE; assert 0 < DEFAULT_CONTEXT_CUTOFF_VALUE < 1; print('✅ Config values are valid')"
         
         # Test utility functions
         python -c "from vcs._utils._utils import _calculate_f1; assert _calculate_f1(1.0, 1.0) == 1.0; assert _calculate_f1(0.0, 1.0) == 0.0; print('✅ Utility functions work')"
