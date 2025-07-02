@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapping Window Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* --- SMOOTHNESS & PERFORMANCE ENHANCEMENTS --- */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 1.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        :root {
+            --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --ease-out-cubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+        }
+
+        /* --- Glassmorphism & Enhanced Card Styles --- */
+        .interactive-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.35s var(--ease-out-cubic),
+                        box-shadow 0.35s var(--ease-out-cubic),
+                        border-color 0.35s var(--ease-out-cubic);
+            will-change: transform, box-shadow;
+        }
+        .interactive-card:hover {
+            box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 15px -8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .demo-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 250, 252, 0.5) 100%); border-color: rgba(226, 232, 240, 0.7); }
+        .intro-card { background: linear-gradient(135deg, rgba(254, 252, 232, 0.6) 0%, rgba(254, 243, 199, 0.5) 100%); border-color: rgba(251, 191, 36, 0.5); }
+        .formula-card { background: linear-gradient(135deg, rgba(237, 233, 254, 0.6) 0%, rgba(221, 214, 254, 0.5) 100%); border-color: rgba(196, 181, 253, 0.6); }
+
+        /* --- Chart & Visualization Elements --- */
+        .mapping-window { position: absolute; box-sizing: border-box; z-index: 10; transition: all 0.3s ease-out; border-radius: 0.25rem; }
+        .precision-window-style { border: 2px solid #0d9488; background-color: rgba(20, 184, 166, 0.3); }
+        .recall-window-style { border: 2px solid #f59e0b; background-color: rgba(245, 158, 11, 0.3); }
+        .axis-label { position: absolute; font-size: 0.75rem; color: #475569; font-weight: 500; white-space: nowrap; }
+        .axis-title { position: absolute; font-size: 0.875rem; color: #475569; font-weight: 600; white-space: nowrap; }
+        .chart-grid-background { background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px); }
+
+        /* --- Tour Styles --- */
+        #tour-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9998; opacity: 0; transition: opacity 0.4s ease-in-out; pointer-events: none; }
+        .tour-highlight { position: relative; z-index: 9999; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), 0 0 20px rgba(255, 255, 255, 0.9); border-radius: 0.5rem; transition: box-shadow 0.4s ease-in-out; }
+        #tour-callout { position: absolute; background: white; color: #334155; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px; border-left: 4px solid #3b82f6; transition: opacity 0.3s var(--ease-out-cubic), transform 0.3s var(--ease-out-cubic); transform: translateY(10px); opacity: 0; }
+        #tour-callout.visible { transform: translateY(0); opacity: 1; }
+        #tour-callout button { background-color: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s var(--ease-out-quad), transform 0.2s var(--ease-out-quad); }
+        #tour-callout button:hover { background-color: #2563eb; transform: translateY(-1px); }
+
+        /* --- Other Styled Components --- */
+        .preset-btn { transition: all 0.2s var(--ease-out-quad); background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); }
+        .preset-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+        details summary { cursor: pointer; user-select: none; transition: color 0.2s var(--ease-out-quad); }
+        details summary:hover { color: #1d4ed8; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary .summary-icon { display: inline-block; margin-right: 0.5rem; transition: transform 0.25s var(--ease-out-cubic); }
+        details[open] summary .summary-icon { transform: rotate(90deg); }
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased">
+    <div id="app-background" class="fixed inset-0 z-[-1] transition-all duration-1000"></div>
+    <div id="tour-overlay"></div>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-8xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 relative">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mr-2">Interactive Demo</div>
+                <div class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">Core VCS Component</div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-800 bg-clip-text text-transparent">Mapping Window Visualization</h1>
+            <p class="mt-3 text-lg text-slate-600 max-w-3xl mx-auto">Explore how texts of different lengths are aligned using precision and recall mapping windows.</p>
+             <button id="start-tour-btn" class="absolute top-0 right-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105">
+                <i class="fas fa-magic mr-2"></i>Start Tour
+            </button>
+        </div>
+
+        <!-- Introduction Section -->
+        <div id="tour-step-intro" class="intro-card interactive-card rounded-xl p-6 mb-8">
+            <div class="flex items-center mb-4"><i class="fas fa-lightbulb text-amber-600 text-xl mr-3"></i><h2 class="text-xl font-semibold text-amber-800">Introduction to Mapping Windows</h2></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h4 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-crosshairs text-teal-500 mr-2"></i>Precision Windows (MW<sub>prec</sub>)</h4><p class="text-sm text-slate-700">Used when matching generated chunks to reference chunks. Shows which reference chunks each generated chunk can align with.</p></div>
+                <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h4 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-search text-amber-500 mr-2"></i>Recall Windows (MW<sub>rec</sub>)</h4><p class="text-sm text-slate-700">Used when matching reference chunks to generated chunks. Shows which generated chunks each reference chunk can align with.</p></div>
+            </div>
+             <details id="tour-step-math" class="mb-4">
+                <summary class="font-semibold text-amber-700 mb-3 flex items-center"><i class="fas fa-chevron-right summary-icon"></i>VCS Mathematics & Window Computation</summary>
+                <div class="mt-4 space-y-6 ml-6 border-l-2 border-slate-200 pl-6">
+                    <!-- Ratio Calculation -->
+                    <div class="flex items-start">
+                        <div class="step-number mr-4 bg-gradient-to-r from-teal-500 to-cyan-500">R</div>
+                        <div>
+                            <h4 class="font-semibold text-slate-800 mb-1">Length Ratio</h4>
+                            <p class="text-sm text-slate-600 mb-2">Calculate the ratio between the longer and shorter text lengths to determine window size.</p>
+                            <div class="math-formula p-3 rounded-lg text-sm">
+                                <code class="text-xs block">r = max(N_ref, N_gen) / min(N_ref, N_gen)</code>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Window Height -->
+                    <div class="flex items-start">
+                        <div class="step-number mr-4 bg-gradient-to-r from-amber-500 to-orange-500">H</div>
+                        <div>
+                            <h4 class="font-semibold text-slate-800 mb-1">Window Height</h4>
+                            <p class="text-sm text-slate-600 mb-2">The mapping window height is the ceiling of the ratio, ensuring all chunks can be matched.</p>
+                            <div class="math-formula p-3 rounded-lg text-sm">
+                                <code class="text-xs block">h_mw = ⌈r⌉</code>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Live Calculation -->
+                    <div class="flex items-start">
+                        <div class="step-number mr-4">📊</div>
+                        <div>
+                            <h4 class="font-semibold text-slate-800 mb-1">Live Calculation</h4>
+                            <p class="text-sm text-slate-600 mb-2">Real-time computation based on your current input values.</p>
+                            <div id="currentMath" class="text-xs bg-amber-100 p-3 rounded-lg border border-amber-200">Current calculation will appear here</div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- App Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 flex flex-col">
+                <!-- Charts Container -->
+                <div id="tour-step-viz" class="grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow">
+                    <!-- Precision Chart -->
+                    <div class="demo-card interactive-card rounded-xl p-6 flex flex-col">
+                        <div class="text-center mb-6"><div class="inline-flex items-center bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-crosshairs mr-1"></i>PRECISION</div><h2 class="text-xl font-bold text-slate-800">Precision Windows</h2><p class="text-sm text-slate-500 mt-1" id="precisionStatus">(Gen → Ref)</p></div>
+                        <div class="relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 flex-grow" style="padding-bottom: 100%; padding-left: 15%; padding-right: 5%;"><div class="absolute" style="top: 10%; bottom: 15%; left: 15%; right: 5%;"><div id="precisionChartGrid" class="relative w-full h-full bg-white rounded-lg chart-grid-background border border-slate-200"><div id="precisionWindowContainer" class="absolute inset-0"></div><div id="precisionAxisLabelContainerY" class="absolute inset-0"></div><div id="precisionAxisLabelContainerX" class="absolute inset-0"></div><div id="precisionAxisTitleX" class="absolute inset-0"></div><div id="precisionAxisTitleY" class="absolute inset-0"></div></div></div></div>
+                        <div class="mt-4 bg-white/50 rounded-lg p-2"><div class="flex items-center text-xs text-slate-600"><div class="w-3 h-3 bg-teal-500 bg-opacity-30 border-2 border-teal-600 rounded mr-2 flex-shrink-0"></div>Each column shows reference chunks mapped to a generated chunk</div></div>
+                    </div>
+                    <!-- Recall Chart -->
+                    <div class="demo-card interactive-card rounded-xl p-6 flex flex-col">
+                        <div class="text-center mb-6"><div class="inline-flex items-center bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-search mr-1"></i>RECALL</div><h2 class="text-xl font-bold text-slate-800">Recall Windows</h2><p class="text-sm text-slate-500 mt-1" id="recallStatus">(Ref → Gen)</p></div>
+                        <div class="relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 flex-grow" style="padding-bottom: 100%; padding-left: 15%; padding-right: 5%;"><div class="absolute" style="top: 10%; bottom: 15%; left: 15%; right: 5%;"><div id="recallChartGrid" class="relative w-full h-full bg-white rounded-lg chart-grid-background border border-slate-200"><div id="recallWindowContainer" class="absolute inset-0"></div><div id="recallAxisLabelContainerY" class="absolute inset-0"></div><div id="recallAxisLabelContainerX" class="absolute inset-0"></div><div id="recallAxisTitleX" class="absolute inset-0"></div><div id="recallAxisTitleY" class="absolute inset-0"></div></div></div></div>
+                        <div class="mt-4 bg-white/50 rounded-lg p-2"><div class="flex items-center text-xs text-slate-600"><div class="w-3 h-3 bg-amber-500 bg-opacity-30 border-2 border-amber-600 rounded mr-2 flex-shrink-0"></div>Each row shows generated chunks mapped to a reference chunk</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="lg:col-span-1 flex flex-col">
+                <div class="flex flex-col space-y-6 h-full">
+                    <div id="tour-step-controls" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-sliders-h text-teal-600 mr-2"></i>Controls</h3>
+                        <div class="space-y-5">
+                            <div><label for="refLenInput" class="block text-sm font-medium text-slate-700 mb-2">Reference Chunks</label><input type="number" id="refLenInput" min="0" max="30" value="5" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"></div>
+                            <div><label for="genLenInput" class="block text-sm font-medium text-slate-700 mb-2">Generated Chunks</label><input type="number" id="genLenInput" min="0" max="30" value="3" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"></div>
+                        </div>
+                    </div>
+                    <div id="tour-step-scenarios" class="demo-card interactive-card rounded-xl p-6 flex-grow flex flex-col justify-end">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-magic text-purple-600 mr-2"></i>Test Scenarios</h3>
+                        <div class="space-y-3">
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setPreset(7, 7)"><i class="fas fa-equals mr-2"></i>Perfect 1:1 Alignment</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setPreset(5, 10)"><i class="fas fa-compress-arrows-alt mr-2"></i>Brevity (1:2 mapping)</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setPreset(10, 5)"><i class="fas fa-expand-arrows-alt mr-2"></i>Verbosity (2:1 mapping)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- DOM Element References ---
+        const refLenInput = document.getElementById('refLenInput');
+        const genLenInput = document.getElementById('genLenInput');
+        const precisionChartGrid = document.getElementById('precisionChartGrid');
+        const precisionWindowContainer = document.getElementById('precisionWindowContainer');
+        const precisionAxisLabelContainerX = document.getElementById('precisionAxisLabelContainerX');
+        const precisionAxisLabelContainerY = document.getElementById('precisionAxisLabelContainerY');
+        const precisionAxisTitleX = document.getElementById('precisionAxisTitleX');
+        const precisionAxisTitleY = document.getElementById('precisionAxisTitleY');
+        const precisionStatus = document.getElementById('precisionStatus');
+        const recallChartGrid = document.getElementById('recallChartGrid');
+        const recallWindowContainer = document.getElementById('recallWindowContainer');
+        const recallAxisLabelContainerX = document.getElementById('recallAxisLabelContainerX');
+        const recallAxisLabelContainerY = document.getElementById('recallAxisLabelContainerY');
+        const recallAxisTitleX = document.getElementById('recallAxisTitleX');
+        const recallAxisTitleY = document.getElementById('recallAxisTitleY');
+        const recallStatus = document.getElementById('recallStatus');
+        const appBackground = document.getElementById('app-background');
+
+        // --- State Variables ---
+        let currentRefLen = 0;
+        let currentGenLen = 0;
+        let allWindows = {};
+
+        // --- Tour Manager ---
+        const tourManager = {
+            isActive: false,
+            currentStep: 0,
+            overlay: document.getElementById('tour-overlay'),
+            steps: [
+                { selector: '#tour-step-intro', text: 'This demo explains the core concept of Mapping Windows, which define permissible alignment regions between two texts.', position: 'bottom' },
+                { selector: '#tour-step-viz', text: 'These charts visualize the Precision (Gen→Ref) and Recall (Ref→Gen) windows. Notice how they adapt to different text lengths.', position: 'top' },
+                { selector: '#tour-step-controls', text: 'Adjust the number of reference and generated chunks here to see how the windows change in real-time.', position: 'left' },
+                { selector: '#tour-step-scenarios', text: 'Use these presets to quickly load common scenarios like 1:1 alignment or cases with different text lengths.', position: 'left' },
+                { selector: '#tour-step-math', text: 'See the live mathematical calculations for the window ratio (r) and height (h_mw) based on your inputs.', position: 'bottom' }
+            ],
+            start: function() { this.isActive = true; this.currentStep = 0; this.overlay.style.pointerEvents = 'auto'; this.overlay.style.opacity = '1'; this.showStep(); },
+            next: function() { this.cleanupCurrentStep(); this.currentStep++; if (this.currentStep < this.steps.length) { setTimeout(() => this.showStep(), 400); } else { this.end(); } },
+            showStep: function() {
+                const step = this.steps[this.currentStep];
+                const targetElement = document.querySelector(step.selector);
+                if (!targetElement) { this.end(); return; }
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                setTimeout(() => {
+                    targetElement.classList.add('tour-highlight');
+                    const callout = document.createElement('div');
+                    callout.id = 'tour-callout';
+                    callout.innerHTML = `<p class="text-sm mb-4">${step.text}</p><div class="flex justify-end"><button onclick="tourManager.next()">Next &rarr;</button></div>`;
+                    document.body.appendChild(callout);
+                    const targetRect = targetElement.getBoundingClientRect();
+                    const calloutRect = callout.getBoundingClientRect();
+                    const margin = 15;
+                    const scrollY = window.scrollY || document.documentElement.scrollTop;
+                    const scrollX = window.scrollX || document.documentElement.scrollLeft;
+                    let top, left;
+                    switch (step.position) {
+                        case 'bottom': top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'top': top = targetRect.top + scrollY - calloutRect.height - margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'left': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.left + scrollX - calloutRect.width - margin; break;
+                        case 'right': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.right + scrollX + margin; break;
+                        default: top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX;
+                    }
+                    const viewportRight = scrollX + window.innerWidth;
+                    const viewportBottom = scrollY + window.innerHeight;
+                    if (left < scrollX + margin) left = scrollX + margin;
+                    if (left + calloutRect.width > viewportRight - margin) left = viewportRight - calloutRect.width - margin;
+                    if (top < scrollY + margin) top = scrollY + margin;
+                    if (top + calloutRect.height > viewportBottom - margin) top = viewportBottom - calloutRect.height - margin;
+                    callout.style.top = `${top}px`;
+                    callout.style.left = `${left}px`;
+                    requestAnimationFrame(() => { callout.classList.add('visible'); });
+                }, 350);
+            },
+            cleanupCurrentStep: function() { const oldHighlight = document.querySelector('.tour-highlight'); if (oldHighlight) oldHighlight.classList.remove('tour-highlight'); const oldCallout = document.getElementById('tour-callout'); if (oldCallout) oldCallout.remove(); },
+            end: function() { this.cleanupCurrentStep(); this.isActive = false; this.overlay.style.opacity = '0'; setTimeout(() => this.overlay.style.pointerEvents = 'none', 400); }
+        };
+
+        // --- Core Logic ---
+        function updateMathDisplay() {
+            const mathDisplay = document.getElementById('currentMath');
+            if (currentRefLen === 0 && currentGenLen === 0) { mathDisplay.innerHTML = 'No chunks to calculate'; return; }
+            const maxLen = Math.max(currentRefLen, currentGenLen);
+            const minLen = Math.min(currentRefLen, currentGenLen);
+            if (minLen === 0) { mathDisplay.innerHTML = 'Edge case: One text has no chunks'; return; }
+            const r = maxLen / minLen;
+            const h_mw = Math.ceil(r);
+            mathDisplay.innerHTML = `<strong>Ratio:</strong> r = ${maxLen}/${minLen} = ${r.toFixed(2)}<br><strong>Win. Height:</strong> h_mw = ⌈${r.toFixed(2)}⌉ = ${h_mw}`;
+        }
+
+        function get_mapping_windows_js(refLen, genLen) {
+            const isRefLonger = refLen >= genLen;
+            const longerLen = isRefLonger ? refLen : genLen;
+            const shorterLen = isRefLonger ? genLen : refLen;
+            if (shorterLen === 0 && longerLen === 0) { return { precision_windows: [], recall_windows: [], isRefLonger: isRefLonger }; }
+            if (shorterLen === 0) { 
+                let prec_wins = genLen > 0 ? Array(genLen).fill({ start: 0, end: 0 }) : [];
+                let rec_wins = refLen > 0 ? Array(refLen).fill({ start: 0, end: 0 }) : [];
+                return { precision_windows: isRefLonger ? [] : prec_wins, recall_windows: isRefLonger ? rec_wins : [], isRefLonger: isRefLonger };
+            }
+            const slope = longerLen / shorterLen;
+            const mappingWindowHeight = Math.max(1, Math.ceil(slope));
+            let direct_windows = []; 
+            for (let i = 0; i < shorterLen; i++) {
+                const idx_point = i * slope;
+                const start = Math.floor(idx_point);
+                const end = Math.min(start + mappingWindowHeight, longerLen);
+                direct_windows.push({ start: start, end: end });
+            }
+            let reverse_windows = []; 
+            for (let long_idx = 0; long_idx < longerLen; long_idx++) {
+                let short_indices = [];
+                direct_windows.forEach((window, short_idx) => { if (window.start <= long_idx && long_idx < window.end) { short_indices.push(short_idx); } });
+                if (short_indices.length > 0) { reverse_windows.push({ start: Math.min(...short_indices), end: Math.max(...short_indices) + 1 }); } 
+                else {
+                    if (direct_windows.length === 0 || shorterLen === 0) { reverse_windows.push({ start: 0, end: 0 }); } 
+                    else if (long_idx < direct_windows[0].start) { reverse_windows.push({ start: 0, end: Math.min(1, shorterLen) }); } 
+                    else { reverse_windows.push({ start: Math.max(0, shorterLen - 1), end: shorterLen }); }
+                }
+            }
+            let precision_windows, recall_windows;
+            if (isRefLonger) { precision_windows = direct_windows; recall_windows = reverse_windows; } 
+            else { recall_windows = direct_windows; precision_windows = reverse_windows; }
+            if (precision_windows.length !== genLen && genLen > 0) { if(precision_windows.length === 0) precision_windows = Array(genLen).fill({start:0, end:0}); }
+            if (recall_windows.length !== refLen && refLen > 0) { if(recall_windows.length === 0) recall_windows = Array(refLen).fill({start:0, end:0}); }
+            return { precision_windows, recall_windows, isRefLonger };
+        }
+
+        // --- Render Functions ---
+        function updateGridBackground(gridElement, numX, numY) {
+            if (numX > 0 && numY > 0) { gridElement.style.backgroundSize = `calc(100% / ${numX}) calc(100% / ${numY})`; } 
+            else { gridElement.style.backgroundSize = '0 0'; }
+        }
+
+        function renderAxisTitles(axisTitleContainerX, axisTitleContainerY, xLabel, yLabel) {
+            axisTitleContainerX.innerHTML = ''; axisTitleContainerY.innerHTML = '';
+            const xTitle = document.createElement('div');
+            xTitle.className = 'axis-title'; xTitle.textContent = xLabel; xTitle.style.bottom = '-3.5rem'; xTitle.style.left = '50%'; xTitle.style.transform = 'translateX(-50%)';
+            axisTitleContainerX.appendChild(xTitle);
+            const yTitle = document.createElement('div');
+            yTitle.className = 'axis-title'; yTitle.textContent = yLabel; yTitle.style.left = '-7.5rem'; yTitle.style.top = '50%'; yTitle.style.transform = 'translateY(-50%) rotate(-90deg)'; yTitle.style.transformOrigin = 'center center';
+            axisTitleContainerY.appendChild(yTitle);
+        }
+
+        function renderAxisLabels(axisLabelContainerX, axisLabelContainerY, numX, numY) {
+            axisLabelContainerX.innerHTML = ''; axisLabelContainerY.innerHTML = '';
+            const maxXIndex = numX > 0 ? numX - 1 : -1; const maxYIndex = numY > 0 ? numY - 1 : -1;
+            const yStep = numY > 0 ? Math.max(1, Math.floor(numY / 8)) || 1 : 1;
+            const xStep = numX > 0 ? Math.max(1, Math.floor(numX / 8)) || 1 : 1;
+            if (numY > 0) {
+                for (let i = 0; i <= maxYIndex; i += yStep) { const tickLabel = document.createElement('div'); tickLabel.className = 'axis-label'; tickLabel.textContent = i; tickLabel.style.left = '-1.5rem'; tickLabel.style.top = `calc(100% - (${i} * 100% / ${numY}) - (50% / ${numY}))`; tickLabel.style.transform = 'translateY(-50%) translateX(-100%)'; axisLabelContainerY.appendChild(tickLabel); }
+                if (maxYIndex > 0 && (maxYIndex % yStep !== 0)) { const tickLabel = document.createElement('div'); tickLabel.className = 'axis-label'; tickLabel.textContent = maxYIndex; tickLabel.style.left = '-1.5rem'; tickLabel.style.top = `calc(100% - (${maxYIndex} * 100% / ${numY}) - (50% / ${numY}))`; tickLabel.style.transform = 'translateY(-50%) translateX(-100%)'; axisLabelContainerY.appendChild(tickLabel); }
+            }
+            if (numX > 0) {
+                for (let i = 0; i <= maxXIndex; i += xStep) { const tickLabel = document.createElement('div'); tickLabel.className = 'axis-label'; tickLabel.textContent = i; tickLabel.style.bottom = '-1.5rem'; tickLabel.style.left = `calc(${i} * 100% / ${numX} + (50% / ${numX}))`; tickLabel.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(tickLabel); }
+                if (maxXIndex > 0 && (maxXIndex % xStep !== 0)) { const tickLabel = document.createElement('div'); tickLabel.className = 'axis-label'; tickLabel.textContent = maxXIndex; tickLabel.style.bottom = '-1.5rem'; tickLabel.style.left = `calc(${maxXIndex} * 100% / ${numX} + (50% / ${numX}))`; tickLabel.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(tickLabel); }
+            }
+        }
+
+        function renderWindows(windowContainer, windowsData, numRef, numGen, type) {
+            windowContainer.innerHTML = '';
+            if (!windowsData || windowsData.length === 0 ) return;
+            if (type === 'precision' && numGen <= 0) return;
+            if (type === 'recall' && numRef <= 0) return;
+            windowsData.forEach((windowObj, index) => {
+                if (!windowObj || typeof windowObj.start === 'undefined' || typeof windowObj.end === 'undefined') return;
+                const windowDiv = document.createElement('div');
+                windowDiv.className = `mapping-window ${type === 'precision' ? 'precision-window-style' : 'recall-window-style'}`;
+                let x_coord, y_coord, w_val, h_val;
+                if (type === 'precision') {
+                    if (index >= numGen || numGen <= 0) return;
+                    x_coord = index / numGen * 100; w_val = 1 / numGen * 100;
+                    y_coord = numRef > 0 ? windowObj.start / numRef * 100 : 0;
+                    h_val = numRef > 0 ? Math.max(0, windowObj.end - windowObj.start) / numRef * 100 : 0;
+                } else {
+                    if (index >= numRef || numRef <= 0) return;
+                    x_coord = index / numRef * 100; w_val = 1 / numRef * 100;
+                    y_coord = numGen > 0 ? windowObj.start / numGen * 100 : 0;
+                    h_val = numGen > 0 ? Math.max(0, windowObj.end - windowObj.start) / numGen * 100 : 0;
+                }
+                w_val = Math.min(Math.max(0, w_val), 100); h_val = Math.min(Math.max(0, h_val), 100);
+                x_coord = Math.min(Math.max(0, x_coord), 100 - w_val); y_coord = 100 - (y_coord + h_val); y_coord = Math.min(Math.max(0, y_coord), 100 - h_val);
+                windowDiv.style.left = `${x_coord}%`; windowDiv.style.width = `${w_val}%`; windowDiv.style.top = `${y_coord}%`; windowDiv.style.height = `${h_val}%`;
+                windowDiv.title = `Index: ${index}, Window: [${windowObj.start}, ${windowObj.end})`;
+                windowContainer.appendChild(windowDiv);
+            });
+        }
+
+        // --- Main Orchestrator ---
+        function initializeStateAndRender() {
+            currentRefLen = parseInt(refLenInput.value, 10);
+            currentGenLen = parseInt(genLenInput.value, 10);
+            currentRefLen = Math.max(0, Math.min(currentRefLen, 30));
+            currentGenLen = Math.max(0, Math.min(currentGenLen, 30));
+            refLenInput.value = currentRefLen; genLenInput.value = currentGenLen;
+            allWindows = get_mapping_windows_js(currentRefLen, currentGenLen);
+            updateMathDisplay();
+            if (currentGenLen === 0 && currentRefLen === 0) { precisionStatus.textContent = 'Precision: N/A'; recallStatus.textContent = 'Recall: N/A'; }
+            else if (currentGenLen === 0) { precisionStatus.textContent = '(No Generated Chunks)'; recallStatus.textContent = allWindows.isRefLonger ? 'Reverse (Ref → Gen)' : 'Direct (Ref → Gen)'; }
+            else if (currentRefLen === 0) { recallStatus.textContent = '(No Reference Chunks)'; precisionStatus.textContent = allWindows.isRefLonger ? 'Direct (Gen → Ref)' : 'Reverse (Gen → Ref)'; }
+            else { precisionStatus.textContent = `Type: ${allWindows.isRefLonger ? 'Direct (Gen → Ref)' : 'Reverse (Gen → Ref)'}`; recallStatus.textContent = `Type: ${allWindows.isRefLonger ? 'Reverse (Ref → Gen)' : 'Direct (Ref → Gen)'}`; }
+            updateGridBackground(precisionChartGrid, currentGenLen, currentRefLen);
+            renderAxisTitles(precisionAxisTitleX, precisionAxisTitleY, 'Generated Chunks', 'Reference Chunks');
+            renderAxisLabels(precisionAxisLabelContainerX, precisionAxisLabelContainerY, currentGenLen, currentRefLen);
+            renderWindows(precisionWindowContainer, allWindows.precision_windows, currentRefLen, currentGenLen, 'precision');
+            updateGridBackground(recallChartGrid, currentRefLen, currentGenLen);
+            renderAxisTitles(recallAxisTitleX, recallAxisTitleY, 'Reference Chunks', 'Generated Chunks');
+            renderAxisLabels(recallAxisLabelContainerX, recallAxisLabelContainerY, currentRefLen, currentGenLen);
+            renderWindows(recallWindowContainer, allWindows.recall_windows, currentRefLen, currentGenLen, 'recall');
+        }
+
+        function setPreset(gen, ref) { genLenInput.value = gen; refLenInput.value = ref; initializeStateAndRender(); }
+
+        // --- Initial Load & Event Listeners ---
+        window.addEventListener('load', () => {
+            document.getElementById('start-tour-btn').addEventListener('click', () => tourManager.start());
+            refLenInput.addEventListener('input', initializeStateAndRender);
+            genLenInput.addEventListener('input', initializeStateAndRender);
+            window.addEventListener('resize', initializeStateAndRender);
+            if(appBackground) { appBackground.style.background = `linear-gradient(135deg, hsl(170, 20%, 90%) 0%, hsl(190, 30%, 95%) 100%)`; }
+            initializeStateAndRender();
+        });
+    </script>
+</body>
+</html>

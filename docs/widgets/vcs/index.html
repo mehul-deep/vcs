@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAS & VCS Interactive Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; transition: background 1.5s cubic-bezier(0.25, 0.1, 0.25, 1); }
+        :root {
+            --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --ease-out-cubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+        }
+
+        .interactive-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.35s var(--ease-out-cubic), box-shadow 0.35s var(--ease-out-cubic), border-color 0.35s var(--ease-out-cubic);
+            will-change: transform, box-shadow;
+        }
+        .interactive-card:hover {
+            box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 15px -8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .demo-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 250, 252, 0.5) 100%); border-color: rgba(226, 232, 240, 0.7); }
+        .intro-card { background: linear-gradient(135deg, rgba(240, 253, 244, 0.6) 0%, rgba(209, 250, 229, 0.5) 100%); border-color: rgba(110, 231, 183, 0.5); }
+        .metrics-card { background: linear-gradient(135deg, rgba(240, 249, 255, 0.6) 0%, rgba(219, 234, 254, 0.5) 100%); border-color: rgba(147, 197, 253, 0.6); }
+        .formula-card { background: linear-gradient(135deg, rgba(237, 233, 254, 0.6) 0%, rgba(221, 214, 254, 0.5) 100%); border-color: rgba(196, 181, 253, 0.6); }
+
+        #tour-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9998; opacity: 0; transition: opacity 0.4s ease-in-out; pointer-events: none; }
+        .tour-highlight { position: relative; z-index: 9999; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), 0 0 20px rgba(255, 255, 255, 0.9); border-radius: 0.5rem; transition: box-shadow 0.4s ease-in-out; }
+        #tour-callout { position: absolute; background: white; color: #334155; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px; border-left: 4px solid #3b82f6; transition: opacity 0.3s var(--ease-out-cubic), transform 0.3s var(--ease-out-cubic); transform: translateY(10px); opacity: 0; }
+        #tour-callout.visible { transform: translateY(0); opacity: 1; }
+        #tour-callout button { background-color: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s var(--ease-out-quad), transform 0.2s var(--ease-out-quad); }
+        #tour-callout button:hover { background-color: #2563eb; transform: translateY(-1px); }
+
+        .pattern-bg { background-image: radial-gradient(circle at 2px 2px, rgba(20, 184, 166, 0.1) 1px, transparent 0); background-size: 20px 20px; }
+        .heatmap-container { background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(248, 250, 252, 0.6) 100%); border: 1px solid #e2e8f0; box-shadow: 0 8px 16px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.04); }
+        .heatmap-grid-actual { display: grid; border: 1px solid #d1d5db; width: 100%; height: 100%; position: relative; }
+        .heatmap-cell { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; font-size: 0.6rem; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; box-sizing: border-box; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: all 0.2s ease; font-weight: 500; }
+        .heatmap-cell:nth-child(11n) { border-right: none; }
+        .heatmap-grid-actual > .heatmap-cell:nth-last-child(-n+11) { border-bottom: none; }
+        .heatmap-cell.highlighted { border: 3px solid #0d9488; box-shadow: 0 0 0 2px #0d9488 inset, 0 4px 8px rgba(13, 148, 136, 0.3); font-weight: bold; z-index: 10; position: relative; transform: scale(1.05); }
+        .preset-btn { transition: all 0.2s var(--ease-out-quad); background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); }
+        .preset-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+        .result-item { position: relative; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding: 8px 0; border-bottom: 1px solid #e2e8f0; cursor: help; }
+        .result-item:last-child { border-bottom: none; }
+        .result-item span:first-child { color: #475569; font-weight: 500; }
+        .result-item span:last-child { font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 1rem; }
+        .result-item.sas-result span:last-child { color: #0d9488; background-color: rgba(13, 148, 136, 0.1); }
+        .result-item.vcs-result span:last-child { color: #8b5cf6; background-color: rgba(139, 92, 246, 0.1); }
+        .axis-title { font-weight: 600; color: #374151; font-size: 0.875rem; }
+        
+        #explainer-tooltip {
+            position: fixed;
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(5px);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            z-index: 10001;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s var(--ease-out-quad), transform 0.25s var(--ease-out-quad);
+            transform: scale(0.95);
+            max-width: 280px;
+            border-left: 4px solid transparent;
+        }
+        #explainer-tooltip.visible { opacity: 1; transform: scale(1); }
+        #explainer-tooltip strong { font-weight: 700; }
+        #explainer-tooltip .sas-color { color: #2dd4bf; }
+        #explainer-tooltip .vcs-color { color: #a78bfa; }
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased">
+    <div id="app-background" class="fixed inset-0 z-[-1] transition-all duration-1000 pattern-bg"></div>
+    <div id="tour-overlay"></div>
+    <div id="explainer-tooltip"></div>
+
+    <main class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <div class="text-center mb-8 relative">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mr-2">Semantic Assessment</div>
+                <div class="bg-violet-100 text-violet-800 px-3 py-1 rounded-full text-xs font-semibold">Multi-Modal Alignment</div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-800 bg-clip-text text-transparent">SAS & VCS Interactive Demo</h1>
+            <p class="mt-3 text-lg text-slate-600 max-w-4xl mx-auto">Explore how Global and Local Alignment combine to form Semantic Alignment, and how semantic and narrative scores create Visual Coherence.</p>
+            <button id="start-tour-btn" class="absolute top-0 right-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105"><i class="fas fa-magic mr-2"></i>Start Tour</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                <div id="tour-step-1" class="intro-card interactive-card rounded-xl p-6">
+                    <div class="flex items-center mb-4"><i class="fas fa-layer-group text-teal-600 text-xl mr-3"></i><h3 class="text-lg font-semibold text-teal-800">Two-Stage Semantic Assessment Process</h3></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h4 class="font-semibold text-teal-700 mb-2 flex items-center"><div class="w-8 h-8 bg-teal-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">1</div>GAS → LAS → SAS</h4><p class="text-sm text-slate-700 mb-3"><strong>Local Alignment Score (LAS)</strong> acts as a regularizer for <strong>Global Alignment Score (GAS)</strong>. When GAS is confident, LAS regularization has minimal effect. This produces the <strong>Semantic Alignment Score (SAS)</strong>.</p><div class="bg-teal-50 p-3 rounded text-xs text-teal-700"><strong>Key Insight:</strong> Strong global confidence reduces the impact of local variations.</div></div>
+                        <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h4 class="font-semibold text-purple-700 mb-2 flex items-center"><div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">2</div>SAS + NAS → VCS</h4><p class="text-sm text-slate-700 mb-3"><strong>Visual Coherence Score (VCS)</strong> compares SAS and NAS, where the smaller score gets regularized. This ensures both semantic understanding and narrative order are captured.</p><div class="bg-purple-50 p-3 rounded text-xs text-purple-700"><strong>Key Insight:</strong> Both semantics and narrative order must be strong for coherent storytelling.</div></div>
+                    </div>
+                    <div class="bg-white bg-opacity-80 p-4 rounded-lg">
+                        <h4 class="font-semibold text-slate-800 mb-2">Story Coherence Logic</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
+                            <div><p><strong>Scenario 1:</strong> High NAS, Low SAS</p><p class="text-xs text-slate-600">Wrong content in right order → No semantic understanding → No story</p></div>
+                            <div><p><strong>Scenario 2:</strong> High SAS, Low NAS</p><p class="text-xs text-slate-600">Right content in wrong order → No narrative coherence → No story</p></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div id="tour-step-2" class="demo-card interactive-card rounded-xl p-4">
+                        <div class="text-center mb-4"><div class="inline-flex items-center bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-th mr-1"></i>SAS HEATMAP</div><h2 class="text-lg font-bold text-slate-800">Local Regularization of Global</h2></div>
+                        <div class="grid items-center gap-x-2" style="grid-template-columns: auto 1fr; grid-template-rows: 1fr auto;">
+                            <div class="axis-title flex justify-center" style="grid-row: 1; grid-column: 1;"><span class="transform -rotate-90 whitespace-nowrap">LAS</span></div>
+                            <div class="heatmap-container rounded-lg p-1" style="grid-row: 1; grid-column: 2;"><div id="sasHeatmapGridActual" class="heatmap-grid-actual aspect-square"></div></div>
+                            <div class="axis-title text-center pt-2" style="grid-row: 2; grid-column: 2;">GAS</div>
+                        </div>
+                    </div>
+                    <div id="tour-step-3" class="demo-card interactive-card rounded-xl p-4">
+                        <div class="text-center mb-4"><div class="inline-flex items-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-th mr-1"></i>VCS HEATMAP</div><h2 class="text-lg font-bold text-slate-800">Semantic + Narrative Coherence</h2></div>
+                        <div class="grid items-center gap-x-2" style="grid-template-columns: auto 1fr; grid-template-rows: 1fr auto;">
+                            <div class="axis-title flex justify-center" style="grid-row: 1; grid-column: 1;"><span class="transform -rotate-90 whitespace-nowrap">SAS</span></div>
+                            <div class="heatmap-container rounded-lg p-1" style="grid-row: 1; grid-column: 2;"><div id="vcsHeatmapGridActual" class="heatmap-grid-actual aspect-square"></div></div>
+                            <div class="axis-title text-center pt-2" style="grid-row: 2; grid-column: 2;">NAS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="lg:col-span-1">
+                <div class="sticky top-6 space-y-6">
+                    <div id="tour-step-4" class="formula-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-purple-800 mb-4 flex items-center"><i class="fas fa-sliders-h text-purple-600 mr-2"></i>Input Scores</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between"><label for="gasInput" class="text-sm font-medium text-slate-700">Global Alignment (GAS):</label><input type="number" id="gasInput" value="0.8" step="0.1" min="0" max="1" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm"></div>
+                            <div class="flex items-center justify-between"><label for="lasInput" class="text-sm font-medium text-slate-700">Local Alignment (LAS):</label><input type="number" id="lasInput" value="0.7" step="0.1" min="0" max="1" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm"></div>
+                            <div class="flex items-center justify-between"><label for="nasInput" class="text-sm font-medium text-slate-700">Narrative Alignment (NAS):</label><input type="number" id="nasInput" value="0.9" step="0.1" min="0" max="1" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm"></div>
+                        </div>
+                    </div>
+                    <div id="tour-step-5" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-magic text-teal-600 mr-2"></i>Test Scenarios</h3>
+                        <div class="space-y-3">
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(0.9, 0.3, 0.8)"><i class="fas fa-arrow-up mr-2"></i>High GAS, Low LAS</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(0.3, 0.9, 0.8)"><i class="fas fa-arrow-down mr-2"></i>Low GAS, High LAS</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(0.5, 0.5, 0.8)"><i class="fas fa-equals mr-2"></i>Mid GAS & LAS</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium text-center" onclick="setScenario(0.9, 0.9, 0.4)">NAS &lt; SAS</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium text-center" onclick="setScenario(0.8, 0.8, 0.9)">SAS &lt; NAS</button>
+                        </div>
+                    </div>
+                    <div id="tour-step-6" class="metrics-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center"><i class="fas fa-chart-line text-blue-600 mr-2"></i>Computed Scores</h3>
+                        <div class="space-y-3">
+                            <div class="result-item sas-result" data-tooltip-type="sas"><span class="flex items-center">Semantic Alignment (SAS): <i class="fas fa-info-circle text-slate-400 ml-2 text-xs"></i></span><span id="sasOutput">0.0000</span></div>
+                            <div class="result-item vcs-result" data-tooltip-type="vcs"><span class="flex items-center">Visual Coherence (VCS): <i class="fas fa-info-circle text-slate-400 ml-2 text-xs"></i></span><span id="vcsOutput">0.0000</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const gasInput = document.getElementById('gasInput'), lasInput = document.getElementById('lasInput'), nasInput = document.getElementById('nasInput');
+        const sasOutput = document.getElementById('sasOutput'), vcsOutput = document.getElementById('vcsOutput');
+        const sasHeatmapGridActual = document.getElementById('sasHeatmapGridActual');
+        const vcsHeatmapGridActual = document.getElementById('vcsHeatmapGridActual');
+        const appBackground = document.getElementById('app-background');
+        const explainerTooltip = document.getElementById('explainer-tooltip');
+        const HEATMAP_STEPS = 11;
+
+        function compute_sas(gas, las) { if (las <= 0) return 0; const val_gl = gas + las - 1; return (val_gl > 1e-9) ? (val_gl / las) : 0; }
+        function compute_vcs(sas, nas) { const num_vcs = sas + nas - 1; if (num_vcs <= 1e-9) return 0; const den_vcs = Math.max(sas, nas); if (Math.abs(den_vcs) < 1e-9) return 0; return num_vcs / den_vcs; }
+        function setScenario(gas, las, nas) { gasInput.value = gas.toFixed(1); lasInput.value = las.toFixed(1); nasInput.value = nas.toFixed(1); updateAll(); }
+
+        const tourManager = {
+            isActive: false, currentStep: 0, overlay: document.getElementById('tour-overlay'),
+            steps: [
+                { selector: '#tour-step-1', text: 'Welcome! This card explains the core concepts: how SAS is formed from GAS and LAS, and how VCS is formed from SAS and NAS.', position: 'bottom' },
+                { selector: '#tour-step-2', text: 'This heatmap visualizes the SAS score based on the inputs. The highlighted cell shows the current GAS/LAS combination.', position: 'top' },
+                { selector: '#tour-step-3', text: 'This heatmap shows the final VCS score. The highlight corresponds to the current SAS/NAS combination.', position: 'top' },
+                { selector: '#tour-step-4', text: 'Use these inputs to manually adjust the scores. The heatmaps and results will update live.', position: 'left' },
+                { selector: '#tour-step-5', text: 'Or, click these buttons to load preset scenarios that demonstrate key interactions between the scores.', position: 'left' },
+                { selector: '#tour-step-6', text: 'The final scores are here. Hover over them to see a plain-language explanation of how they were calculated!', position: 'left' }
+            ],
+            start: function() { this.isActive = true; this.currentStep = 0; this.overlay.style.pointerEvents = 'auto'; this.overlay.style.opacity = '1'; this.showStep(); },
+            next: function() { this.cleanupCurrentStep(); this.currentStep++; if (this.currentStep < this.steps.length) { setTimeout(() => this.showStep(), 400); } else { this.end(); } },
+            showStep: function() {
+                const step = this.steps[this.currentStep];
+                const targetElement = document.querySelector(step.selector);
+                if (!targetElement) { this.end(); return; }
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                setTimeout(() => {
+                    targetElement.classList.add('tour-highlight');
+                    const callout = document.createElement('div'); callout.id = 'tour-callout';
+                    callout.innerHTML = `<p class="text-sm mb-4">${step.text}</p><div class="flex justify-end"><button onclick="tourManager.next()">Next &rarr;</button></div>`;
+                    document.body.appendChild(callout);
+                    const targetRect = targetElement.getBoundingClientRect(); const calloutRect = callout.getBoundingClientRect(); const margin = 15;
+                    const scrollY = window.scrollY || document.documentElement.scrollTop; const scrollX = window.scrollX || document.documentElement.scrollLeft;
+                    let top, left;
+                    switch (step.position) {
+                        case 'bottom': top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'top': top = targetRect.top + scrollY - calloutRect.height - margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'left': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.left + scrollX - calloutRect.width - margin; break;
+                        case 'right': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.right + scrollX + margin; break;
+                        default: top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX;
+                    }
+                    const viewportRight = scrollX + window.innerWidth; const viewportBottom = scrollY + window.innerHeight;
+                    if (left < scrollX + margin) left = scrollX + margin; if (left + calloutRect.width > viewportRight - margin) left = viewportRight - calloutRect.width - margin;
+                    if (top < scrollY + margin) top = scrollY + margin; if (top + calloutRect.height > viewportBottom - margin) top = viewportBottom - calloutRect.height - margin;
+                    callout.style.top = `${top}px`; callout.style.left = `${left}px`;
+                    requestAnimationFrame(() => { callout.classList.add('visible'); });
+                }, 350);
+            },
+            cleanupCurrentStep: function() {
+                const oldHighlight = document.querySelector('.tour-highlight'); if (oldHighlight) oldHighlight.classList.remove('tour-highlight');
+                const oldCallout = document.getElementById('tour-callout'); if (oldCallout) oldCallout.remove();
+            },
+            end: function() { this.cleanupCurrentStep(); this.isActive = false; this.overlay.style.opacity = '0'; setTimeout(() => this.overlay.style.pointerEvents = 'none', 400); }
+        };
+
+        function getCellColor(value) {
+            const v = Math.max(0, Math.min(1, value)); if (v < 0.01) return '#f8fafc';
+            const hue = 160 + (v * 40); const saturation = 40 + (v * 40); const lightness = 95 - (v * 50);
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        function createSingleHeatmap(grid, dataFunc, yVals, xVals, isVCS) {
+            grid.innerHTML = ''; grid.style.gridTemplateColumns = `repeat(${HEATMAP_STEPS}, 1fr)`; grid.style.gridTemplateRows = `repeat(${HEATMAP_STEPS}, 1fr)`;
+            for (let i = 0; i < HEATMAP_STEPS; i++) {
+                for (let j = 0; j < HEATMAP_STEPS; j++) {
+                    const cellVal = dataFunc(parseFloat(xVals[j]), parseFloat(yVals[HEATMAP_STEPS - 1 - i]));
+                    const cell = document.createElement('div'); cell.className = 'heatmap-cell';
+                    cell.textContent = cellVal.toFixed(2); cell.style.backgroundColor = getCellColor(cellVal);
+                    if (isVCS) { cell.dataset.nas = xVals[j]; cell.dataset.sas = yVals[HEATMAP_STEPS - 1 - i]; }
+                    else { cell.dataset.gas = xVals[j]; cell.dataset.las = yVals[HEATMAP_STEPS - 1 - i]; }
+                    grid.appendChild(cell);
+                }
+            }
+        }
+        
+        function updateDynamicBackground(vcsScore) {
+            const score = isNaN(vcsScore) ? 0 : vcsScore;
+            const hue = 120 + 100 * score; const saturation = 30 + 40 * score; const lightness = 85 + 10 * score;
+            const startColor = `hsl(170, ${saturation-10}%, ${lightness-5}%)`; const endColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            appBackground.style.background = `linear-gradient(135deg, ${startColor} 0%, ${endColor} 100%)`;
+        }
+        
+        let highlightedSasCell, highlightedVcsCell;
+        function updateAll() {
+            let gas = parseFloat(gasInput.value), las = parseFloat(lasInput.value), nas = parseFloat(nasInput.value);
+            gas = isNaN(gas) ? 0 : Math.max(0, Math.min(1, gas));
+            las = isNaN(las) ? 0 : Math.max(0, Math.min(1, las));
+            nas = isNaN(nas) ? 0 : Math.max(0, Math.min(1, nas));
+            
+            gasInput.value = gas.toFixed(1);
+            lasInput.value = las.toFixed(1);
+            nasInput.value = nas.toFixed(1);
+            
+            const current_sas = compute_sas(gas, las);
+            const current_vcs = compute_vcs(current_sas, nas);
+            sasOutput.textContent = current_sas.toFixed(4);
+            vcsOutput.textContent = current_vcs.toFixed(4);
+
+            if (highlightedSasCell) highlightedSasCell.classList.remove('highlighted');
+            highlightedSasCell = sasHeatmapGridActual.querySelector(`.heatmap-cell[data-gas="${gas.toFixed(1)}"][data-las="${las.toFixed(1)}"]`);
+            if (highlightedSasCell) highlightedSasCell.classList.add('highlighted');
+
+            if (highlightedVcsCell) highlightedVcsCell.classList.remove('highlighted');
+            const sasForHighlight = parseFloat(current_sas.toFixed(1)).toFixed(1);
+            highlightedVcsCell = vcsHeatmapGridActual.querySelector(`.heatmap-cell[data-sas="${sasForHighlight}"][data-nas="${nas.toFixed(1)}"]`);
+            if (highlightedVcsCell) highlightedVcsCell.classList.add('highlighted');
+            
+            updateDynamicBackground(current_vcs);
+        }
+
+        function showExplainerTooltip(e, type) {
+            let gas = parseFloat(gasInput.value), las = parseFloat(lasInput.value), nas = parseFloat(nasInput.value);
+            let sas = parseFloat(sasOutput.textContent);
+            let text = '';
+            let borderColor = '';
+
+            if (type === 'sas') {
+                borderColor = '#14b8a6';
+                if (gas + las < 1) { text = `With both <strong class="sas-color">GAS (${gas.toFixed(1)})</strong> and <strong class="sas-color">LAS (${las.toFixed(1)})</strong> being low, their sum is less than 1, resulting in a <strong>SAS score of 0.</strong>`; }
+                else if (gas > 0.9) { text = `Because <strong class="sas-color">Global Alignment (${gas.toFixed(1)})</strong> is very high, the <strong class="sas-color">Local Alignment (${las.toFixed(1)})</strong> has little regularizing effect, leading to a strong SAS.`; }
+                else { text = `The <strong class="sas-color">SAS score</strong> is determined by how much the sum of <strong class="sas-color">GAS (${gas.toFixed(1)})</strong> and <strong class="sas-color">LAS (${las.toFixed(1)})</strong> exceeds 1, normalized by the LAS score.`; }
+            } else if (type === 'vcs') {
+                borderColor = '#8b5cf6';
+                if (sas > nas) { text = `The <strong class="vcs-color">VCS score</strong> is penalized because <strong class="vcs-color">Narrative Alignment (${nas.toFixed(1)})</strong> is significantly lower than <strong class="vcs-color">Semantic Alignment (${sas.toFixed(2)})</strong>.`; }
+                else if (nas > sas) { text = `The <strong class="vcs-color">VCS score</strong> is penalized because <strong class="vcs-color">Semantic Alignment (${sas.toFixed(2)})</strong> is lower than <strong class="vcs-color">Narrative Alignment (${nas.toFixed(1)})</strong>.`; }
+                else { text = `With both <strong class="vcs-color">SAS (${sas.toFixed(2)})</strong> and <strong class="vcs-color">NAS (${nas.toFixed(1)})</strong> being high and balanced, the final VCS score is strong.`; }
+            }
+            
+            explainerTooltip.innerHTML = text;
+            explainerTooltip.style.borderColor = borderColor;
+
+            // New positioning logic
+            const tooltipRect = explainerTooltip.getBoundingClientRect();
+            let top = e.clientY + 15;
+            let left = e.clientX + 15;
+
+            if (left + tooltipRect.width > window.innerWidth) {
+                left = e.clientX - tooltipRect.width - 15;
+            }
+            if (top + tooltipRect.height > window.innerHeight) {
+                top = e.clientY - tooltipRect.height - 15;
+            }
+
+            explainerTooltip.style.left = `${left}px`;
+            explainerTooltip.style.top = `${top}px`;
+            explainerTooltip.classList.add('visible');
+        }
+
+        function hideExplainerTooltip() { explainerTooltip.classList.remove('visible'); }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const axisValues = Array.from({length: HEATMAP_STEPS}, (_, k) => (k * 0.1).toFixed(1));
+            const reversedAxisValues = [...axisValues].reverse();
+            createSingleHeatmap(sasHeatmapGridActual, (gas, las) => compute_sas(gas, las), reversedAxisValues, axisValues, false);
+            createSingleHeatmap(vcsHeatmapGridActual, (nas, sas) => compute_vcs(sas, nas), reversedAxisValues, axisValues, true);
+            
+            [gasInput, lasInput, nasInput].forEach(input => { input.addEventListener('input', updateAll); });
+            document.getElementById('start-tour-btn').addEventListener('click', () => tourManager.start());
+            
+            document.querySelectorAll('.result-item').forEach(item => {
+                item.addEventListener('mouseenter', e => showExplainerTooltip(e, item.dataset.tooltipType));
+                item.addEventListener('mouseleave', hideExplainerTooltip);
+                item.addEventListener('mousemove', e => {
+                    // This ensures the tooltip follows the mouse while avoiding the boundary logic on every single pixel move
+                    const tooltipRect = explainerTooltip.getBoundingClientRect();
+                    let top = e.clientY + 15;
+                    let left = e.clientX + 15;
+                    if (left + tooltipRect.width > window.innerWidth) { left = e.clientX - tooltipRect.width - 15; }
+                    if (top + tooltipRect.height > window.innerHeight) { top = e.clientY - tooltipRect.height - 15; }
+                    explainerTooltip.style.left = `${left}px`;
+                    explainerTooltip.style.top = `${top}px`;
+                });
+            });
+            
+            updateAll(); 
+        });
+    </script>
+</body>
+</html>

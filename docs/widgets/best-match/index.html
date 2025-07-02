@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Matching Algorithm Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* --- SMOOTHNESS & PERFORMANCE ENHANCEMENTS --- */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 1.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        :root {
+            --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --ease-out-cubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+        }
+
+        /* --- Glassmorphism & Enhanced Card Styles --- */
+        .interactive-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.35s var(--ease-out-cubic),
+                        box-shadow 0.35s var(--ease-out-cubic),
+                        border-color 0.35s var(--ease-out-cubic);
+            will-change: transform, box-shadow;
+        }
+        .interactive-card:hover {
+            box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 15px -8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .demo-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 250, 252, 0.5) 100%); border-color: rgba(226, 232, 240, 0.7); }
+        .intro-card { background: linear-gradient(135deg, rgba(254, 226, 226, 0.6) 0%, rgba(254, 202, 202, 0.5) 100%); border-color: rgba(248, 113, 113, 0.5); }
+        .solution-card { background: linear-gradient(135deg, rgba(236, 253, 245, 0.6) 0%, rgba(209, 250, 229, 0.5) 100%); border-color: rgba(110, 231, 183, 0.6); }
+        .formula-card { background: linear-gradient(135deg, rgba(237, 233, 254, 0.6) 0%, rgba(221, 214, 254, 0.5) 100%); border-color: rgba(196, 181, 253, 0.6); }
+
+        /* --- Chart & Visualization Elements --- */
+        .axis-label { position: absolute; font-size: 0.75rem; color: #475569; font-weight: 500; white-space: nowrap; z-index: 6; }
+        .ideal-mapping-window { position: absolute; border: 2px solid #0d9488; background-color: rgba(20, 184, 166, 0.1); box-sizing: border-box; z-index: 1; transition: all 0.3s var(--ease-out-quad); pointer-events: none; border-radius: 0.25rem; }
+        .best-match-cell { position: absolute; background-color: rgba(245, 158, 11, 0.3); border: 2px solid #f59e0b; box-sizing: border-box; z-index: 3; transition: all 0.3s ease-out; pointer-events: none; border-radius: 0.25rem; }
+        .max-similarity-cell-highlight { position: absolute; background-color: rgba(139, 92, 246, 0.25); border: 2px solid #8b5cf6; box-sizing: border-box; z-index: 2; transition: all 0.3s ease-out; pointer-events: none; display: flex; align-items: flex-end; justify-content: flex-end; padding: 2px; border-radius: 0.25rem; }
+        .context-window-text { font-size: 0.6rem; color: white; background-color: rgba(0, 0, 0, 0.5); padding: 1px 3px; border-radius: 2px; white-space: nowrap; pointer-events: none; }
+        .similarity-value-cell-container { position: absolute; display: flex; align-items: center; justify-content: center; box-sizing: border-box; z-index: 4; }
+        .similarity-input-cell { width: 100%; height: 100%; text-align: center; border: none; background-color: transparent; font-size: 0.7rem; color: #475569; box-sizing: border-box; border-radius: 4px; padding: 2px; }
+        .similarity-input-cell:focus { outline: 1px solid #3b82f6; background-color: rgba(255, 255, 255, 0.9); }
+        .chart-grid-background { background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px); }
+        
+        /* --- Tour Styles --- */
+        #tour-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9998; opacity: 0; transition: opacity 0.4s ease-in-out; pointer-events: none; }
+        .tour-highlight { position: relative; z-index: 9999; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), 0 0 20px rgba(255, 255, 255, 0.9); border-radius: 0.5rem; transition: box-shadow 0.4s ease-in-out; }
+        #tour-callout { position: absolute; background: white; color: #334155; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px; border-left: 4px solid #3b82f6; transition: opacity 0.3s var(--ease-out-cubic), transform 0.3s var(--ease-out-cubic); transform: translateY(10px); opacity: 0; }
+        #tour-callout.visible { transform: translateY(0); opacity: 1; }
+        #tour-callout button { background-color: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s var(--ease-out-quad), transform 0.2s var(--ease-out-quad); }
+        #tour-callout button:hover { background-color: #2563eb; transform: translateY(-1px); }
+
+        /* --- Other Styled Components --- */
+        .preset-btn { transition: all 0.2s var(--ease-out-quad); background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); }
+        .preset-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased">
+    <div id="app-background" class="fixed inset-0 z-[-1] transition-all duration-1000"></div>
+    <div id="tour-overlay"></div>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-8xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 relative">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mr-2">Interactive Demo</div>
+                <div class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">Advanced VCS Algorithm</div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-800 bg-clip-text text-transparent">Best Matching Algorithm</h1>
+            <p class="mt-3 text-lg text-slate-600 max-w-3xl mx-auto">Discover how VCS solves semantic ambiguity and collision problems to find optimal chunk alignments.</p>
+            <button id="start-tour-btn" class="absolute top-0 right-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105">
+                <i class="fas fa-magic mr-2"></i>Start Tour
+            </button>
+        </div>
+
+        <!-- Introduction Section -->
+        <div id="tour-step-intro" class="intro-card interactive-card rounded-xl p-6 mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-3"></i>
+                <h2 class="text-xl font-semibold text-red-800">The Matching Problem</h2>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column: Definitions -->
+                <div class="space-y-6">
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg">
+                        <h3 class="font-semibold text-red-700 mb-2 flex items-center"><i class="fas fa-sitemap text-red-500 mr-2"></i>Semantic Collisions</h3>
+                        <p class="text-sm text-slate-700">A chunk exhibits high similarity with multiple chunks from the other text, resulting in many-to-one matches rather than desired one-to-one correspondences.</p>
+                    </div>
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg">
+                        <h3 class="font-semibold text-red-700 mb-2 flex items-center"><i class="fas fa-question-circle text-red-500 mr-2"></i>Semantic Ambiguity</h3>
+                        <p class="text-sm text-slate-700">A generated chunk superficially matches a reference chunk due to lexical overlap, despite another reference chunk being a more suitable narrative counterpart.</p>
+                    </div>
+                </div>
+                <!-- Right Column: Example Table and Elaboration -->
+                <div class="bg-white bg-opacity-60 p-4 rounded-lg">
+                    <h4 class="font-semibold text-slate-800 mb-3 text-center">Illustrative Similarity Scenario</h4>
+                    <div class="overflow-x-auto">
+                        <table class="mx-auto text-sm w-full">
+                            <thead>
+                                <tr class="border-b-2 border-slate-300">
+                                    <th class="px-4 py-2"></th>
+                                    <th class="px-4 py-2 font-semibold">Ref 1</th>
+                                    <th class="px-4 py-2 font-semibold">Ref 5</th>
+                                    <th class="px-4 py-2 font-semibold">Ref 9</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-slate-200">
+                                    <td class="px-4 py-2 font-semibold">Gen 1</td>
+                                    <td class="px-4 py-2 text-center bg-red-100 font-bold">0.80</td>
+                                    <td class="px-4 py-2 text-center">0.32</td>
+                                    <td class="px-4 py-2 text-center bg-red-100 font-bold">0.78</td>
+                                </tr>
+                                <tr class="border-b border-slate-200">
+                                    <td class="px-4 py-2 font-semibold">Gen 6</td>
+                                    <td class="px-4 py-2 text-center">0.30</td>
+                                    <td class="px-4 py-2 text-center bg-green-100 font-bold">0.85</td>
+                                    <td class="px-4 py-2 text-center">0.25</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 font-semibold">Gen 10</td>
+                                    <td class="px-4 py-2 text-center bg-red-100 font-bold">0.80</td>
+                                    <td class="px-4 py-2 text-center">0.28</td>
+                                    <td class="px-4 py-2 text-center bg-red-100 font-bold">0.79</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 text-xs text-slate-600 space-y-2">
+                        <p><strong class="text-red-600">Collision:</strong> Both <code class="bg-slate-200 px-1 rounded">Gen 1</code> and <code class="bg-slate-200 px-1 rounded">Gen 10</code> have a high similarity of <code class="bg-slate-200 px-1 rounded">0.80</code> with <code class="bg-slate-200 px-1 rounded">Ref 1</code>. A naive algorithm would struggle to choose the correct one-to-one match.</p>
+                        <p><strong class="text-red-600">Ambiguity:</strong> <code class="bg-slate-200 px-1 rounded">Gen 10</code> has a high score with <code class="bg-slate-200 px-1 rounded">Ref 1</code> (<code class="bg-slate-200 px-1 rounded">0.80</code>) due to word overlap, but its true narrative match is <code class="bg-slate-200 px-1 rounded">Ref 9</code> (<code class="bg-slate-200 px-1 rounded">0.79</code>). The algorithm must look beyond the max score.</p>
+                         <p><strong class="text-green-600">Clear Match:</strong> In contrast, <code class="bg-slate-200 px-1 rounded">Gen 6</code> has a clear, unambiguous best match with <code class="bg-slate-200 px-1 rounded">Ref 5</code> (<code class="bg-slate-200 px-1 rounded">0.85</code>), which the algorithm should easily identify.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="solution-card interactive-card rounded-xl p-6 mb-8">
+            <div class="flex items-center mb-4"><i class="fas fa-lightbulb text-teal-600 text-xl mr-3"></i><h2 class="text-xl font-semibold text-teal-800">The VCS Solution: Dual-Mechanism Approach</h2></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-teal-700 mb-2 flex items-center"><i class="fas fa-expand-arrows-alt text-teal-500 mr-2"></i>1. Adaptive Context Window</h3><p class="text-sm text-slate-700">Dynamically adjusts candidate search space based on peak similarity strength. High similarity allows wider exploration; low similarity tightens focus.</p></div>
+                <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-crosshairs text-amber-500 mr-2"></i>2. Mapping Window Disambiguation</h3><p class="text-sm text-slate-700">When multiple candidates survive context filtering, mapping windows provide narrative-order-aware tie-breaking by prioritizing chronologically coherent alignments.</p></div>
+            </div>
+        </div>
+
+        <!-- App Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Matrix Visualization -->
+                <div id="tour-step-viz" class="demo-card interactive-card rounded-xl p-6">
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-chart-line mr-1"></i>SIMILARITY MATRIX</div>
+                        <h2 class="text-xl font-bold text-slate-800">Interactive Best Matching Visualization</h2>
+                        <p class="text-sm text-slate-500 mt-1">Click any cell to edit similarity values • Observe real-time algorithm behavior</p>
+                    </div>
+                    <div class="relative w-full max-w-4xl mx-auto pt-4 pb-12 pl-12 pr-2">
+                        <div class="absolute top-1/2 -left-12 -translate-y-1/2 -rotate-90 font-semibold text-sm text-slate-600 whitespace-nowrap">Reference Chunks</div>
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 font-semibold text-sm text-slate-600">Generated Chunks</div>
+                        <div class="relative w-full aspect-square">
+                            <div id="chartGrid" class="absolute inset-0 bg-white rounded-lg chart-grid-background border border-slate-200">
+                                <div id="idealMappingContainer"></div>
+                                <div id="maxSimilarityHighlightContainer"></div>
+                                <div id="bestMatchHighlightContainer"></div>
+                                <div id="similarityValueContainer"></div>
+                                <div id="axisLabelContainerY"></div>
+                                <div id="axisLabelContainerX"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-center items-center gap-6 mt-4 pt-4 border-t border-slate-200/80">
+                        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded border-2 border-teal-600 bg-teal-500/20"></div><span class="text-xs text-slate-600 font-medium">Mapping Window</span></div>
+                        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded border-2 border-amber-500 bg-amber-500/30"></div><span class="text-xs text-slate-600 font-medium">Best Match</span></div>
+                        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded border-2 border-purple-500 bg-purple-500/20"></div><span class="text-xs text-slate-600 font-medium">Alternative Match</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-6 flex flex-col gap-6">
+                    <div id="tour-step-controls" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-th text-teal-600 mr-2"></i>Grid Size</h3>
+                        <div class="space-y-4">
+                            <div><label for="refLenInput" class="block text-sm font-medium text-slate-700 mb-2">Reference Chunks (Y-Axis)</label><input type="number" id="refLenInput" min="1" max="15" value="9" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"></div>
+                            <div><label for="genLenInput" class="block text-sm font-medium text-slate-700 mb-2">Generated Chunks (X-Axis)</label><input type="number" id="genLenInput" min="1" max="15" value="9" class="w-full p-2 border border-slate-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"></div>
+                        </div>
+                    </div>
+                    <div id="tour-step-scenarios" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-magic text-purple-600 mr-2"></i>Problem Scenarios</h3>
+                        <div class="space-y-3">
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setCollisionScenario()"><i class="fas fa-sitemap mr-2"></i>Semantic Collisions</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setAmbiguityScenario()"><i class="fas fa-question-circle mr-2"></i>Semantic Ambiguity</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setRandomScenario()"><i class="fas fa-random mr-2"></i>Random Similarities</button>
+                        </div>
+                    </div>
+                    <div id="tour-step-params" class="formula-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-purple-800 mb-3 flex items-center"><i class="fas fa-cogs text-purple-600 mr-2"></i>Algorithm Controls</h3>
+                        <div class="space-y-4">
+                            <div><label for="contextCutoffInput" class="block text-sm font-medium text-purple-700 mb-2">Context Cutoff<i class="fas fa-info-circle text-purple-500 ml-1" title="Minimum similarity to apply context window"></i></label><input type="number" id="contextCutoffInput" min="0" max="1" step="0.01" value="0.6" class="w-full p-2 border border-purple-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"><p class="text-xs text-purple-600 mt-1">Below this, no context window is applied</p></div>
+                            <div><label for="contextWindowCtrlInput" class="block text-sm font-medium text-purple-700 mb-2">Context Window Control<i class="fas fa-info-circle text-purple-500 ml-1" title="Controls the width of the adaptive context window"></i></label><input type="number" id="contextWindowCtrlInput" min="0.1" max="10" step="0.1" value="4.0" class="w-full p-2 border border-purple-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"><p class="text-xs text-purple-600 mt-1">Higher values = narrower context windows</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- DOM Element References ---
+        const chartGrid = document.getElementById('chartGrid');
+        const idealMappingContainer = document.getElementById('idealMappingContainer');
+        const bestMatchHighlightContainer = document.getElementById('bestMatchHighlightContainer');
+        const maxSimilarityHighlightContainer = document.getElementById('maxSimilarityHighlightContainer');
+        const similarityValueContainer = document.getElementById('similarityValueContainer');
+        const axisLabelContainerX = document.getElementById('axisLabelContainerX');
+        const axisLabelContainerY = document.getElementById('axisLabelContainerY');
+        const refLenInput = document.getElementById('refLenInput');
+        const genLenInput = document.getElementById('genLenInput');
+        const contextCutoffInput = document.getElementById('contextCutoffInput');
+        const contextWindowCtrlInput = document.getElementById('contextWindowCtrlInput');
+        const appBackground = document.getElementById('app-background');
+
+        // --- State Variables ---
+        let numUnitsY = parseInt(refLenInput.value, 10);
+        let numUnitsX = parseInt(genLenInput.value, 10);
+        let contextCutoffValue = parseFloat(contextCutoffInput.value);
+        let contextWindowCtrl = parseFloat(contextWindowCtrlInput.value);
+        let similarityMatrix = [];
+        let currentPrecisionWindows = [];
+
+        // --- Tour Manager ---
+        const tourManager = {
+            isActive: false,
+            currentStep: 0,
+            overlay: document.getElementById('tour-overlay'),
+            steps: [
+                { selector: '#tour-step-intro', text: 'This demo explains the core problems of semantic matching: Ambiguity and Collisions. These issues can lead to incorrect alignments.', position: 'bottom' },
+                { selector: '#tour-step-viz', text: 'This interactive matrix visualizes the algorithm. You can click any cell to edit similarity values and see how the matches change in real-time.', position: 'top' },
+                { selector: '#tour-step-controls', text: 'Adjust the number of reference (Y-axis) and generated (X-axis) chunks here to change the grid dimensions.', position: 'left' },
+                { selector: '#tour-step-scenarios', text: 'Load pre-defined scenarios that highlight specific matching problems like "Semantic Collisions" or "Semantic Ambiguity".', position: 'left' },
+                { selector: '#tour-step-params', text: 'Fine-tune the algorithm\'s behavior by adjusting the Context Cutoff and Context Window Control parameters.', position: 'left' }
+            ],
+            start: function() { this.isActive = true; this.currentStep = 0; this.overlay.style.pointerEvents = 'auto'; this.overlay.style.opacity = '1'; this.showStep(); },
+            next: function() { this.cleanupCurrentStep(); this.currentStep++; if (this.currentStep < this.steps.length) { setTimeout(() => this.showStep(), 400); } else { this.end(); } },
+            showStep: function() {
+                const step = this.steps[this.currentStep];
+                const targetElement = document.querySelector(step.selector);
+                if (!targetElement) { this.end(); return; }
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                setTimeout(() => {
+                    targetElement.classList.add('tour-highlight');
+                    const callout = document.createElement('div');
+                    callout.id = 'tour-callout';
+                    callout.innerHTML = `<p class="text-sm mb-4">${step.text}</p><div class="flex justify-end"><button onclick="tourManager.next()">Next &rarr;</button></div>`;
+                    document.body.appendChild(callout);
+                    const targetRect = targetElement.getBoundingClientRect();
+                    const calloutRect = callout.getBoundingClientRect();
+                    const margin = 15;
+                    const scrollY = window.scrollY || document.documentElement.scrollTop;
+                    const scrollX = window.scrollX || document.documentElement.scrollLeft;
+                    let top, left;
+                    switch (step.position) {
+                        case 'bottom': top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'top': top = targetRect.top + scrollY - calloutRect.height - margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'left': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.left + scrollX - calloutRect.width - margin; break;
+                        case 'right': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.right + scrollX + margin; break;
+                        default: top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX;
+                    }
+                    const viewportRight = scrollX + window.innerWidth;
+                    const viewportBottom = scrollY + window.innerHeight;
+                    if (left < scrollX + margin) left = scrollX + margin;
+                    if (left + calloutRect.width > viewportRight - margin) left = viewportRight - calloutRect.width - margin;
+                    if (top < scrollY + margin) top = scrollY + margin;
+                    if (top + calloutRect.height > viewportBottom - margin) top = viewportBottom - calloutRect.height - margin;
+                    callout.style.top = `${top}px`;
+                    callout.style.left = `${left}px`;
+                    requestAnimationFrame(() => { callout.classList.add('visible'); });
+                }, 350);
+            },
+            cleanupCurrentStep: function() { const oldHighlight = document.querySelector('.tour-highlight'); if (oldHighlight) oldHighlight.classList.remove('tour-highlight'); const oldCallout = document.getElementById('tour-callout'); if (oldCallout) oldCallout.remove(); },
+            end: function() { this.cleanupCurrentStep(); this.isActive = false; this.overlay.style.opacity = '0'; setTimeout(() => this.overlay.style.pointerEvents = 'none', 400); }
+        };
+
+        // --- Scenario Preset Functions ---
+        function setCollisionScenario() {
+            for (let c = 0; c < numUnitsX; c++) {
+                const baseValue = (Math.random() * 0.6 + 0.3);
+                const indices = [];
+                while (indices.length < 2) { const randomIdx = Math.floor(Math.random() * numUnitsY); if (!indices.includes(randomIdx)) indices.push(randomIdx); }
+                for (let r = 0; r < numUnitsY; r++) { similarityMatrix[r][c] = indices.includes(r) ? parseFloat(baseValue.toFixed(2)) : parseFloat((Math.random() * 0.4).toFixed(2)); }
+            }
+            renderAll();
+        }
+
+        function setAmbiguityScenario() {
+            for (let c = 0; c < numUnitsX; c++) {
+                const baseValue = (Math.random() * 0.5 + 0.4);
+                const indices = [];
+                while (indices.length < 2) { const randomIdx = Math.floor(Math.random() * numUnitsY); if (!indices.includes(randomIdx)) indices.push(randomIdx); }
+                for (let r = 0; r < numUnitsY; r++) {
+                    if (indices.includes(r)) { const variation = indices[0] === r ? 0 : (Math.random() * 0.03); similarityMatrix[r][c] = parseFloat((baseValue - variation).toFixed(2)); } 
+                    else { similarityMatrix[r][c] = parseFloat((Math.random() * 0.3).toFixed(2)); }
+                }
+            }
+            renderAll();
+        }
+
+        function setRandomScenario() { initializeSimilarityMatrix(numUnitsY, numUnitsX); renderAll(); }
+
+        // --- Core Logic ---
+        function initializeSimilarityMatrix(rows, cols) {
+            similarityMatrix = [];
+            for (let r = 0; r < rows; r++) { const row = []; for (let c = 0; c < cols; c++) { row.push(parseFloat(Math.random().toFixed(2))); } similarityMatrix.push(row); }
+        }
+
+        function get_mapping_windows_js(refLen, genLen) {
+            const isRefLonger = refLen >= genLen;
+            const longerLen = isRefLonger ? refLen : genLen; const shorterLen = isRefLonger ? genLen : refLen;
+            if (shorterLen === 0) return { precision_windows: [] };
+            const slope = longerLen / shorterLen;
+            const mappingWindowHeight = Math.ceil(slope);
+            let direct_windows = [];
+            for (let i = 0; i < shorterLen; i++) { const idx_point = i * slope; const start = Math.max(Math.floor(idx_point), 0); const end = Math.min(start + mappingWindowHeight, longerLen); direct_windows.push({ start: start, end: end }); }
+            let precision_windows_for_gen_chunks;
+            if (isRefLonger) { precision_windows_for_gen_chunks = direct_windows; } 
+            else {
+                precision_windows_for_gen_chunks = [];
+                for (let genIdx = 0; genIdx < genLen; genIdx++) {
+                    let mappedRefIndices = [];
+                    direct_windows.forEach((ref_window_on_gen_axis, refIdx) => { if (genIdx >= ref_window_on_gen_axis.start && genIdx < ref_window_on_gen_axis.end) { mappedRefIndices.push(refIdx); } });
+                    if (mappedRefIndices.length > 0) { precision_windows_for_gen_chunks.push({ start: Math.min(...mappedRefIndices), end: Math.max(...mappedRefIndices) + 1 }); } 
+                    else { const proportionalRefPos = Math.floor((genIdx / genLen) * refLen); precision_windows_for_gen_chunks.push({ start: proportionalRefPos, end: Math.min(proportionalRefPos + 1, refLen) }); }
+                }
+            }
+            return { precision_windows: precision_windows_for_gen_chunks };
+        }
+
+        function findBestMatchWithContextJS(similarityArray, mappingWindow, cutoff, ctrl) {
+            let maxVal = -Infinity; let maxIdx = -1;
+            if (!similarityArray || similarityArray.length === 0) return { bestMatchIndex: -1, maxSimilarityIndex: -1, maxSimilarityValue: -Infinity, contextWindowApplied: false, calculatedContextWindow: 0 };
+            similarityArray.forEach((val, idx) => { if (val > maxVal) { maxVal = val; maxIdx = idx; } });
+            if (maxIdx === -1) return { bestMatchIndex: -1, maxSimilarityIndex: -1, maxSimilarityValue: maxVal, contextWindowApplied: false, calculatedContextWindow: 0 };
+            const contextRange = 1 - cutoff;
+            const contextWindowApplied = maxVal > 0 && (contextRange - (1 - maxVal)) > 0;
+            const contextValueDrop = contextWindowApplied ? ((contextRange - (1 - maxVal)) / maxVal) / ctrl : 0.0;
+            const contextThreshold = maxVal - contextValueDrop;
+            const calculatedCtxWindowForDisplay = contextValueDrop;
+            const candidateIndices = []; const candidateValues = [];
+            similarityArray.forEach((val, idx) => { if (val >= contextThreshold) { candidateIndices.push(idx); candidateValues.push(val); } });
+            let bestMatchIndexToReturn = maxIdx;
+            if (candidateIndices.length === 0) { bestMatchIndexToReturn = maxIdx; } 
+            else if (candidateIndices.length === 1 || !mappingWindow) { bestMatchIndexToReturn = candidateIndices.length === 1 ? candidateIndices[0] : maxIdx; } 
+            else {
+                const { start, end } = mappingWindow; let distances = [];
+                candidateIndices.forEach(candIdx => { const isInWin = candIdx >= start && candIdx < end; if (isInWin) { distances.push(0); } else { const leftDist = Math.max(start - candIdx, 0); const rightDist = Math.max(candIdx - (end - 1), 0); distances.push(Math.max(leftDist, rightDist)); } });
+                let minDistance = Infinity; let highestSimilarityInMinDistanceGroup = -Infinity; bestMatchIndexToReturn = -1;
+                for (let i = 0; i < candidateIndices.length; i++) {
+                    const currentCandOriginalIndex = candidateIndices[i]; const currentCandSimilarity = candidateValues[i]; const currentDistance = distances[i];
+                    if (currentDistance < minDistance) { minDistance = currentDistance; highestSimilarityInMinDistanceGroup = currentCandSimilarity; bestMatchIndexToReturn = currentCandOriginalIndex; } 
+                    else if (currentDistance === minDistance) { if (currentCandSimilarity > highestSimilarityInMinDistanceGroup) { highestSimilarityInMinDistanceGroup = currentCandSimilarity; bestMatchIndexToReturn = currentCandOriginalIndex; } }
+                }
+            }
+            return { bestMatchIndex: bestMatchIndexToReturn, maxSimilarityIndex: maxIdx, maxSimilarityValue: maxVal, contextWindowApplied: contextWindowApplied, calculatedContextWindow: calculatedCtxWindowForDisplay };
+        }
+
+        // --- Render Functions ---
+        function updateGridBackground() { chartGrid.style.backgroundSize = `calc(100% / ${numUnitsX}) calc(100% / ${numUnitsY})`; }
+
+        function renderIdealMappingWindows() {
+            idealMappingContainer.innerHTML = '';
+            if (!currentPrecisionWindows) return;
+            currentPrecisionWindows.forEach((window, gen_chunk_idx) => {
+                if (gen_chunk_idx >= numUnitsX || !window) return;
+                const idealWindowDiv = document.createElement('div');
+                idealWindowDiv.classList.add('ideal-mapping-window');
+                idealWindowDiv.style.left = `calc(${gen_chunk_idx} * 100% / ${numUnitsX})`;
+                idealWindowDiv.style.width = `calc(100% / ${numUnitsX})`;
+                idealWindowDiv.style.bottom = `calc(${window.start} * 100% / ${numUnitsY})`;
+                const windowHeight = Math.max(0, window.end - window.start);
+                idealWindowDiv.style.height = `calc(${windowHeight} * 100% / ${numUnitsY})`;
+                idealMappingContainer.appendChild(idealWindowDiv);
+            });
+        }
+
+        function handleCellEdit(event, r_idx, c_idx) {
+            const rawValue = event.target.value; let newValue = parseFloat(rawValue);
+            if (!isNaN(newValue)) { newValue = Math.max(0, Math.min(1, newValue)); similarityMatrix[r_idx][c_idx] = parseFloat(newValue.toFixed(2)); event.target.value = similarityMatrix[r_idx][c_idx].toFixed(2); renderBestMatches(); renderMaxSimilarityHighlights(); } 
+            else if (rawValue === "") { similarityMatrix[r_idx][c_idx] = 0; event.target.value = "0.00"; renderBestMatches(); renderMaxSimilarityHighlights(); } 
+            else { event.target.value = similarityMatrix[r_idx][c_idx].toFixed(2); }
+        }
+
+        function renderSimilarityValues() {
+            similarityValueContainer.innerHTML = '';
+            if (!similarityMatrix || similarityMatrix.length === 0) return;
+            const cellWidth = `calc(100% / ${numUnitsX})`; const cellHeight = `calc(100% / ${numUnitsY})`;
+            for (let r_idx = 0; r_idx < numUnitsY; r_idx++) {
+                for (let c_idx = 0; c_idx < numUnitsX; c_idx++) {
+                    const inputCell = document.createElement('input');
+                    inputCell.type = 'number'; inputCell.min = '0'; inputCell.max = '1'; inputCell.step = '0.01';
+                    inputCell.classList.add('similarity-input-cell');
+                    inputCell.value = similarityMatrix[r_idx][c_idx].toFixed(2);
+                    inputCell.addEventListener('change', (event) => handleCellEdit(event, r_idx, c_idx));
+                    const cellContainer = document.createElement('div');
+                    cellContainer.classList.add('similarity-value-cell-container');
+                    cellContainer.style.width = cellWidth; cellContainer.style.height = cellHeight;
+                    cellContainer.style.left = `calc(${c_idx} * 100% / ${numUnitsX})`;
+                    cellContainer.style.bottom = `calc(${r_idx} * 100% / ${numUnitsY})`;
+                    cellContainer.appendChild(inputCell);
+                    similarityValueContainer.appendChild(cellContainer);
+                }
+            }
+        }
+
+        function renderBestMatches() {
+            bestMatchHighlightContainer.innerHTML = '';
+            if (!similarityMatrix || similarityMatrix.length === 0 || !currentPrecisionWindows) return;
+            for (let c_idx = 0; c_idx < numUnitsX; c_idx++) {
+                const columnSimilarity = similarityMatrix.map(row => row[c_idx]);
+                const mappingWindow = currentPrecisionWindows[c_idx];
+                if (!mappingWindow) continue;
+                const matchInfo = findBestMatchWithContextJS(columnSimilarity, mappingWindow, contextCutoffValue, contextWindowCtrl);
+                if (matchInfo.bestMatchIndex !== -1 && matchInfo.bestMatchIndex < numUnitsY) {
+                    const highlightCell = document.createElement('div');
+                    highlightCell.classList.add('best-match-cell');
+                    highlightCell.style.width = `calc(100% / ${numUnitsX})`;
+                    highlightCell.style.height = `calc(100% / ${numUnitsY})`;
+                    highlightCell.style.left = `calc(${c_idx} * 100% / ${numUnitsX})`;
+                    highlightCell.style.bottom = `calc(${matchInfo.bestMatchIndex} * 100% / ${numUnitsY})`;
+                    bestMatchHighlightContainer.appendChild(highlightCell);
+                }
+            }
+        }
+
+        function renderMaxSimilarityHighlights() {
+            maxSimilarityHighlightContainer.innerHTML = '';
+            if (!similarityMatrix || similarityMatrix.length === 0 || !currentPrecisionWindows) return;
+            for (let c_idx = 0; c_idx < numUnitsX; c_idx++) {
+                const columnSimilarity = similarityMatrix.map(row => row[c_idx]);
+                const mappingWindow = currentPrecisionWindows[c_idx];
+                if (!mappingWindow) continue;
+                const matchInfo = findBestMatchWithContextJS(columnSimilarity, mappingWindow, contextCutoffValue, contextWindowCtrl);
+                if (matchInfo.maxSimilarityIndex !== -1 && matchInfo.maxSimilarityIndex !== matchInfo.bestMatchIndex) {
+                    const highlightCell = document.createElement('div');
+                    highlightCell.classList.add('max-similarity-cell-highlight');
+                    highlightCell.style.width = `calc(100% / ${numUnitsX})`;
+                    highlightCell.style.height = `calc(100% / ${numUnitsY})`;
+                    highlightCell.style.left = `calc(${c_idx} * 100% / ${numUnitsX})`;
+                    highlightCell.style.bottom = `calc(${matchInfo.maxSimilarityIndex} * 100% / ${numUnitsY})`;
+                    const contextText = document.createElement('span');
+                    contextText.classList.add('context-window-text');
+                    contextText.textContent = `CW: ${matchInfo.calculatedContextWindow.toFixed(3)}`;
+                    highlightCell.appendChild(contextText);
+                    maxSimilarityHighlightContainer.appendChild(highlightCell);
+                }
+            }
+        }
+
+        function renderAxisLabels() {
+            axisLabelContainerX.innerHTML = ''; axisLabelContainerY.innerHTML = '';
+            const maxGridIndexX = numUnitsX - 1; const maxGridIndexY = numUnitsY - 1;
+            const yStep = Math.max(1, Math.floor(numUnitsY / 10)) || 1;
+            const xStep = Math.max(1, Math.floor(numUnitsX / 10)) || 1;
+            if (numUnitsY > 0) {
+                 for (let i = 0; i <= maxGridIndexY; i += yStep) { const tL = document.createElement('div'); tL.classList.add('axis-label'); tL.textContent = i; tL.style.left = '-1rem'; tL.style.top = `calc(100% - (${i}*100%/${numUnitsY}) - (50%/${numUnitsY}))`; tL.style.transform = 'translateY(-50%) translateX(-100%)'; axisLabelContainerY.appendChild(tL); }
+                 if (maxGridIndexY > 0 && (maxGridIndexY % yStep !== 0)) { const lTY = document.createElement('div'); lTY.classList.add('axis-label'); lTY.textContent = maxGridIndexY; lTY.style.left = '-1rem'; lTY.style.top = `calc(100% - (${maxGridIndexY}*100%/${numUnitsY}) - (50%/${numUnitsY}))`; lTY.style.transform = 'translateY(-50%) translateX(-100%)'; axisLabelContainerY.appendChild(lTY); }
+            }
+            if (numUnitsX > 0) {
+                for (let i = 0; i <= maxGridIndexX; i += xStep) { const tL = document.createElement('div'); tL.classList.add('axis-label'); tL.textContent = i; tL.style.bottom = '-1.5rem'; tL.style.left = `calc(${i}*100%/${numUnitsX} + 50%/${numUnitsX})`; tL.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(tL); }
+                if (maxGridIndexX > 0 && (maxGridIndexX % xStep !== 0)) { const lTX = document.createElement('div'); lTX.classList.add('axis-label'); lTX.textContent = maxGridIndexX; lTX.style.bottom = '-1.5rem'; lTX.style.left = `calc(${maxGridIndexX}*100%/${numUnitsX} + 50%/${numUnitsX})`; lTX.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(lTX); }
+            }
+        }
+
+        // --- Main Render Orchestrator ---
+        function renderAll() {
+            renderSimilarityValues();
+            renderBestMatches();
+            renderMaxSimilarityHighlights();
+        }
+
+        function initializeStateAndRender(isResize = false) {
+            numUnitsY = parseInt(refLenInput.value, 10) || 1;
+            numUnitsX = parseInt(genLenInput.value, 10) || 1;
+            contextCutoffValue = parseFloat(contextCutoffInput.value) || 0.6;
+            contextWindowCtrl = parseFloat(contextWindowCtrlInput.value) || 4.0;
+            refLenInput.value = numUnitsY; genLenInput.value = numUnitsX;
+            contextCutoffInput.value = contextCutoffValue; contextWindowCtrlInput.value = contextWindowCtrl;
+
+            const dimensionsChanged = similarityMatrix.length !== numUnitsY || (similarityMatrix[0] && similarityMatrix[0].length !== numUnitsX);
+            if (!isResize && (dimensionsChanged || similarityMatrix.length === 0)) { initializeSimilarityMatrix(numUnitsY, numUnitsX); } 
+            else if (isResize && dimensionsChanged) { initializeSimilarityMatrix(numUnitsY, numUnitsX); }
+
+            const windows = get_mapping_windows_js(numUnitsY, numUnitsX);
+            currentPrecisionWindows = windows.precision_windows;
+            updateGridBackground();
+            renderSimilarityValues();
+            renderIdealMappingWindows();
+            renderBestMatches();
+            renderMaxSimilarityHighlights();
+            renderAxisLabels();
+        }
+
+        // --- Initial Load & Event Listeners ---
+        window.addEventListener('load', () => {
+            document.getElementById('start-tour-btn').addEventListener('click', () => tourManager.start());
+            refLenInput.addEventListener('change', () => initializeStateAndRender(false));
+            genLenInput.addEventListener('change', () => initializeStateAndRender(false));
+            contextCutoffInput.addEventListener('change', () => { contextCutoffValue = parseFloat(contextCutoffInput.value) || 0.6; contextCutoffInput.value = contextCutoffValue; renderBestMatches(); renderMaxSimilarityHighlights(); });
+            contextWindowCtrlInput.addEventListener('change', () => { contextWindowCtrl = parseFloat(contextWindowCtrlInput.value) || 4.0; contextWindowCtrlInput.value = contextWindowCtrl; renderBestMatches(); renderMaxSimilarityHighlights(); });
+            window.addEventListener('resize', () => initializeStateAndRender(true));
+            // Set a default background on load
+            if(appBackground) { appBackground.style.background = `linear-gradient(135deg, hsl(170, 20%, 90%) 0%, hsl(190, 30%, 95%) 100%)`; }
+            initializeStateAndRender(false);
+        });
+    </script>
+</body>
+</html>

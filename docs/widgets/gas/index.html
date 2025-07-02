@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gradient-to-br from-slate-50 to-teal-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Alignment Score (GAS) - VCS Component</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .demo-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .pattern-bg {
+            background-image: radial-gradient(circle at 2px 2px, rgba(20, 184, 166, 0.1) 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+
+        .concept-card {
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+            border: 1px solid #99f6e4;
+        }
+
+        .problem-card {
+            background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+            border: 1px solid #f87171;
+        }
+
+        .solution-card {
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+            border: 1px solid #99f6e4;
+        }
+
+        .info-badge {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+        }
+
+        .gas-badge {
+            background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
+            color: #1e40af;
+        }
+
+        .limitation-badge {
+            background: linear-gradient(135deg, #fecaca 0%, #f87171 100%);
+            color: #991b1b;
+        }
+
+        .formula-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .example-box {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .example-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #0d9488, #14b8a6);
+        }
+
+        .example-box h5 {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .example-box h5 i {
+            margin-right: 0.5rem;
+            color: #0d9488;
+        }
+
+        .example-box p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #475569;
+            margin: 0;
+        }
+
+        .gas-score-display {
+            background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .gas-score-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1e40af;
+            font-family: 'Courier New', monospace;
+        }
+
+        .gas-score-label {
+            font-size: 0.8rem;
+            color: #1e40af;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .text-original {
+            background-color: rgba(229, 231, 235, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .text-changed {
+            background-color: rgba(251, 191, 36, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid #f59e0b;
+        }
+
+        .text-moved {
+            background-color: rgba(147, 197, 253, 0.3);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid #3b82f6;
+        }
+
+        .text-added {
+            background-color: rgba(167, 243, 208, 0.4);
+            padding: 2px 4px;
+            border-radius: 3px;
+            border-bottom: 2px solid #059669;
+        }
+
+        .text-removed {
+            background-color: rgba(252, 165, 165, 0.4);
+            padding: 2px 4px;
+            border-radius: 3px;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .example-box:hover {
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+            border: 1px solid #c4b5fd;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 0.75rem;
+            padding: 1rem;
+        }
+
+        .limitation-highlight {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 1px solid #f87171;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+        }
+
+        .strength-highlight {
+            background: linear-gradient(135deg, #d1fae5 0%, #86efac 100%);
+            border: 1px solid #22c55e;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+        }
+
+        .summary-table {
+            overflow-x: auto;
+            margin: 2rem 0;
+        }
+
+        .summary-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-table th {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .summary-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .summary-table .challenge-name {
+            text-align: left;
+            font-weight: 600;
+            background: #f8fafc;
+        }
+
+        .score-excellent { 
+            background-color: #d1fae5;
+            color: #14532d;
+            font-weight: bold;
+        }
+        
+        .score-good { 
+            background-color: #fef3c7;
+            color: #92400e;
+            font-weight: bold;
+        }
+        
+        .score-poor { 
+            background-color: #fee2e2;
+            color: #991b1b;
+            font-weight: bold;
+        }
+
+        .math-formula {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased pattern-bg">
+
+    <!-- Main Container -->
+    <main class="w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <!-- Paper Reference Warning -->
+        <div class="warning-box mb-8">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-amber-600 text-xl mr-3 mt-1"></i>
+                <div>
+                    <h4 class="font-semibold text-amber-800 mb-2">Interactive Playground Notice</h4>
+                    <p class="text-amber-700 text-sm leading-relaxed">
+                        These interactive pages provide hands-on demonstrations of VCS components but are <strong>not meant to give complete understanding</strong>. For comprehensive technical details, mathematical derivations, experimental validation, and theoretical foundations, please refer to our complete research paper before using these playground demonstrations.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Header -->
+        <div class="text-center mb-12">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mr-2">
+                    VCS Component
+                </div>
+                <div class="gas-badge px-3 py-1 rounded-full text-xs font-semibold">
+                    <i class="fas fa-globe-americas mr-1"></i>Global Semantic Alignment
+                </div>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4">
+                Global Alignment Score (GAS)
+            </h1>
+            <p class="mt-4 text-xl text-slate-600 max-w-4xl mx-auto leading-relaxed">
+                Measuring overall semantic alignment between entire reference and generated texts through global embedding comparison.
+            </p>
+        </div>
+
+        <!-- GAS Explanation -->
+        <div class="demo-card rounded-xl p-8 mb-12">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+                <i class="fas fa-lightbulb text-blue-600 mr-3"></i>
+                What is Global Alignment Score (GAS)?
+            </h2>
+            <p class="text-lg text-slate-600 mb-6 leading-relaxed">
+                The Global Alignment Score (GAS) measures the <strong>overall semantic alignment</strong> between entire reference texts (T<sub>ref</sub>) and generated texts (T<sub>gen</sub>). GAS determines whether both narratives address similar or identical overarching themes, concepts, and entities at a holistic level.
+            </p>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-4">
+                        <i class="fas fa-cogs text-blue-600 mr-2"></i>How GAS Works
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="strength-highlight">
+                            <h4 class="font-semibold text-green-800 mb-2">
+                                <i class="fas fa-step-forward text-green-600 mr-2"></i>Step 1: Global Embedding
+                            </h4>
+                            <p class="text-green-700 text-sm">Both texts are embedded independently using nv-embed-v2 to generate global embedding vectors.</p>
+                        </div>
+                        <div class="strength-highlight">
+                            <h4 class="font-semibold text-green-800 mb-2">
+                                <i class="fas fa-step-forward text-green-600 mr-2"></i>Step 2: Cosine Similarity
+                            </h4>
+                            <p class="text-green-700 text-sm">GAS is calculated using cosine similarity between these global embeddings.</p>
+                        </div>
+                        <div class="strength-highlight">
+                            <h4 class="font-semibold text-green-800 mb-2">
+                                <i class="fas fa-step-forward text-green-600 mr-2"></i>Step 3: Holistic Assessment
+                            </h4>
+                            <p class="text-green-700 text-sm">Scores range from 0 to 1, with higher values indicating greater semantic alignment.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-4">
+                        <i class="fas fa-calculator text-blue-600 mr-2"></i>Mathematical Formulation
+                    </h3>
+                    <div class="formula-box">
+                        <div class="mb-3">
+                            <strong>Step 1: Embedding Generation</strong>
+                        </div>
+                        <div class="mb-2">E<sub>ref</sub> = Embed<sub>NV2</sub>(T<sub>ref</sub>)</div>
+                        <div class="mb-4">E<sub>gen</sub> = Embed<sub>NV2</sub>(T<sub>gen</sub>)</div>
+                        
+                        <div class="mb-3">
+                            <strong>Step 2: Cosine Similarity</strong>
+                        </div>
+                        <div class="text-center text-lg">
+                            GAS = cos(E<sub>ref</sub>, E<sub>gen</sub>) = <br>
+                            <span class="text-blue-600">
+                                (E<sub>ref</sub> · E<sub>gen</sub>) / (‖E<sub>ref</sub>‖ · ‖E<sub>gen</sub>‖)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAS Performance on the Four Challenges -->
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                GAS Performance Analysis
+            </h2>
+            <p class="mt-2 text-lg text-slate-600">How GAS handles the four fundamental evaluation challenges</p>
+        </div>
+
+        <!-- Challenge 1: Expressive Variability -->
+        <div class="concept-card rounded-xl p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-quote-right text-teal-600 text-2xl mr-4"></i>
+                <div>
+                    <h3 class="text-2xl font-semibold text-teal-800">Challenge 1: Expressive Variability</h3>
+                    <div class="gas-badge px-3 py-1 rounded-full text-xs font-semibold mt-2">
+                        Paraphrasing and Linguistic Variations
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="example-box">
+                    <h5><i class="fas fa-file-text"></i>Reference Description</h5>
+                    <p>
+                        <span class="text-original">The old market bell rings, starting a busy market. Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around. The steady ring of the bell sets the pace for the day. A wise old vendor stops by his stall, giving advice to those who pass by. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong. Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                </div>
+                <div class="example-box">
+                    <h5><i class="fas fa-language"></i>Valid Paraphrased Version</h5>
+                    <p>
+                        <span class="text-changed">The weathered marketplace bell tolls, ushering in a bustling bazaar. Merchants unveil their colorful booths in the crowded square, while the aroma of warm loaves drifts through the air. A youthful vendor calls out enticing bargains as inquisitive patrons congregate nearby. The rhythmic chime of the bell establishes the tempo for the morning. An experienced stallholder pauses at his stand, offering counsel to passersby. As the marketplace grows lively, the bell resonates again at noon, reminding folks here of their shared camaraderie. A gentle drizzle momentarily slows the throng, yet spirits remain undampened. Village raconteurs spin modest yarns that captivate all onlookers. As dusk approaches, the timeworn bell sounds one final time, perfectly mirroring its morning greeting.</span>
+                    </p>
+                    <div class="gas-score-display">
+                        <div class="gas-score-number">0.897</div>
+                        <div class="gas-score-label">GAS Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="strength-highlight mt-6">
+                <h4 class="font-semibold text-green-800 mb-2">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>GAS Strength: Excellent Paraphrase Recognition
+                </h4>
+                <p class="text-green-700">GAS correctly recognizes that extensive paraphrasing preserves semantic meaning. The high score (0.897) demonstrates that GAS successfully captures global semantic alignment despite complete lexical differences.</p>
+            </div>
+        </div>
+
+        <!-- Challenge 2: Descriptive Variability - Brevity -->
+        <div class="concept-card rounded-xl p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-compress-alt text-teal-600 text-2xl mr-4"></i>
+                <div>
+                    <h3 class="text-2xl font-semibold text-teal-800">Challenge 2A: Descriptive Variability (Brevity)</h3>
+                    <div class="gas-badge px-3 py-1 rounded-full text-xs font-semibold mt-2">
+                        65% Length Reduction
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="example-box">
+                    <h5><i class="fas fa-file-text"></i>Reference (95 words)</h5>
+                    <p>
+                        <span class="text-original">The old market bell rings, starting a busy market. Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around. The steady ring of the bell sets the pace for the day. A wise old vendor stops by his stall, giving advice to those who pass by. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong. Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                </div>
+                <div class="example-box">
+                    <h5><i class="fas fa-compress-alt"></i>Brevity Version (33 words)</h5>
+                    <p>
+                        <span class="text-removed">The old market bell signals vendors to open stalls amid fresh bread aromas. A young seller calls out deals, drawing curious onlookers as the bell sets the day's pace. A wise old vendor advises passersby when the midday bell rings, fostering community spirit. A brief light rain slows the crowd, but local storytellers share simple tales that maintain spirits. At evening, the final bell echoes the day's start.</span>
+                    </p>
+                    <div class="gas-score-display">
+                        <div class="gas-score-number">0.941</div>
+                        <div class="gas-score-label">GAS Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="strength-highlight mt-6">
+                <h4 class="font-semibold text-green-800 mb-2">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>GAS Strength: Length-Agnostic Evaluation
+                </h4>
+                <p class="text-green-700">GAS achieves an excellent score (0.941) despite 65% length reduction, demonstrating its ability to recognize that brevity can preserve core narrative themes without losing semantic alignment.</p>
+            </div>
+        </div>
+
+        <!-- Challenge 2B: Descriptive Variability - Verbosity -->
+        <div class="concept-card rounded-xl p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-search-plus text-teal-600 text-2xl mr-4"></i>
+                <div>
+                    <h3 class="text-2xl font-semibold text-teal-800">Challenge 2B: Descriptive Variability (Verbosity)</h3>
+                    <div class="gas-badge px-3 py-1 rounded-full text-xs font-semibold mt-2">
+                        377% Length Increase
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="example-box">
+                    <h5><i class="fas fa-file-text"></i>Reference (95 words)</h5>
+                    <p>
+                        <span class="text-original">The old market bell rings, starting a busy market. Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around. The steady ring of the bell sets the pace for the day. A wise old vendor stops by his stall, giving advice to those who pass by. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong. Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                </div>
+                <div class="example-box">
+                    <h5><i class="fas fa-search-plus"></i>Micro-Action Detail (358 words)</h5>
+                    <p style="max-height: 300px; overflow-y: auto;">
+                        <span class="text-added">The old market bell swings forward, strikes the metal rim sharply, swings back, and its echo ripples gently outward, marking the market's opening. Vendors grasp wooden shutters, push them upward firmly, latch them in place, unroll striped canvas covers, and arrange baskets methodically. Hands quickly stack fresh bread loaves, tilt trays slightly, and let warm scents drift into the morning air. A young seller heaves a heavy crate onto an old barrel, wipes his brow briefly, sorts goods neatly, and taps each loaf with care. He cups his palms around his mouth, takes a deep breath, and calls clearly, drawing curious passersby who step nearer one by one, nodding and exchanging glances. The bell maintains a steady rhythm: the clapper swings, strikes, swings again, echo fading, yet steady enough to pace the market's tempo. A wise vendor gently rests his cane against the stall, straightens his hat carefully, beckons a passerby closer, cups a hand near his mouth, whispers some seasoned advice, then nudges a jar slightly to realign his wares precisely. At midday, a hand firmly pulls the rope, swinging the bell's heavy clapper once more. The deep sound resonates, prompting shoppers to pause, look around briefly, nod politely at familiar faces, then return to browsing and bargaining. Raindrops gently land on canvas awnings, roll down fabric edges, drip onto stone pavement, and ripple through small puddles. People step swiftly beneath nearby shelters, umbrellas pop open quickly, hands brush off damp sleeves, and murmurs rise as everyone maintains their good spirits. A storyteller carefully steps onto an overturned crate, shakes out a worn cloth puppet, extends one hand upward to signal silence, narrates a short, simple tale clearly, then lowers the puppet as young listeners applaud enthusiastically. As evening approaches, the old bell swings again slowly, the metal rim vibrates briefly, ringing one final time. Vendors quickly fold cloth, lower shutters carefully, lock wooden panels, sweep stray crumbs away, and gather their belongings. Gradually, people exit the square, voices growing softer, footsteps fading, the quiet evening gently mirroring the day's hopeful start.</span>
+                    </p>
+                    <div class="gas-score-display">
+                        <div class="gas-score-number">0.886</div>
+                        <div class="gas-score-label">GAS Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="strength-highlight mt-6">
+                <h4 class="font-semibold text-green-800 mb-2">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>GAS Strength: Detail-Level Tolerance
+                </h4>
+                <p class="text-green-700">Despite 377% length increase with micro-action detail, GAS maintains a strong score (0.886), showing its ability to recognize that granular descriptions preserve the same overarching narrative themes.</p>
+            </div>
+        </div>
+
+        <!-- Challenge 3: Narrative Variability -->
+        <div class="concept-card rounded-xl p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-random text-teal-600 text-2xl mr-4"></i>
+                <div>
+                    <h3 class="text-2xl font-semibold text-teal-800">Challenge 3: Narrative Variability</h3>
+                    <div class="gas-badge px-3 py-1 rounded-full text-xs font-semibold mt-2">
+                        Valid Narrative Reordering
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="example-box">
+                    <h5><i class="fas fa-file-text"></i>Original Narrative Order</h5>
+                    <p>
+                        <span class="text-original">The old market bell rings, starting a busy market. Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around. The steady ring of the bell sets the pace for the day. A wise old vendor stops by his stall, giving advice to those who pass by. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong. Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                </div>
+                <div class="example-box">
+                    <h5><i class="fas fa-random"></i>Valid Narrative Reordering</h5>
+                    <p>
+                        <span class="text-moved">Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around.</span> 
+                        <span class="text-moved">The old market bell rings, starting a busy market.</span> 
+                        <span class="text-moved">The steady ring of the bell sets the pace for the day. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong.</span> 
+                        <span class="text-moved">A wise old vendor stops by his stall, giving advice to those who pass by.</span> 
+                        <span class="text-moved">Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                    <div class="gas-score-display">
+                        <div class="gas-score-number">0.893</div>
+                        <div class="gas-score-label">GAS Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="strength-highlight mt-6">
+                <h4 class="font-semibold text-green-800 mb-2">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>GAS Strength: Order-Independent Evaluation
+                </h4>
+                <p class="text-green-700">GAS achieves a high score (0.893) for valid reordering, demonstrating that global embeddings capture thematic content regardless of sequence, which is appropriate for narrative variations.</p>
+            </div>
+        </div>
+
+        <!-- Challenge 4A: Chronological Variability - Local Disruption -->
+        <div class="problem-card rounded-xl p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-exchange-alt text-red-600 text-2xl mr-4"></i>
+                <div>
+                    <h3 class="text-2xl font-semibold text-red-800">Challenge 4A: Chronological Variability (Local Disruption)</h3>
+                    <div class="limitation-badge px-3 py-1 rounded-full text-xs font-semibold mt-2">
+                        Neighboring Sentences Swapped
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="example-box">
+                    <h5><i class="fas fa-file-text"></i>Reference</h5>
+                    <p>
+                        <span class="text-original">The old market bell rings, starting a busy market. Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around. The steady ring of the bell sets the pace for the day. A wise old vendor stops by his stall, giving advice to those who pass by. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong. Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                </div>
+                <div class="example-box">
+                    <h5><i class="fas fa-exchange-alt"></i>Neighboring Sentences Swapped</h5>
+                    <p>
+                        <span class="text-moved">Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air.</span> 
+                        <span class="text-moved">The old market bell rings, starting a busy market.</span> 
+                        <span class="text-moved">The steady ring of the bell sets the pace for the day.</span> 
+                        <span class="text-moved">A young seller shouts out good deals as curious people gather around.</span> 
+                        <span class="text-moved">As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit.</span> 
+                        <span class="text-moved">A wise old vendor stops by his stall, giving advice to those who pass by.</span> 
+                        <span class="text-moved">Local storytellers tell simple tales that catch everyone's attention.</span> 
+                        <span class="text-moved">A light rain briefly slows the crowd, but everyone's spirit stays strong.</span> 
+                        <span class="text-original">As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                    <div class="gas-score-display">
+                        <div class="gas-score-number">0.991</div>
+                        <div class="gas-score-label">GAS Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="limitation-highlight mt-6">
+                <h4 class="font-semibold text-red-800 mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>GAS Limitation: Blind to Local Chronological Chaos
+                </h4>
+                <p class="text-red-700">GAS gives an almost perfect score (0.991) despite severe local chronological disruption. Global embeddings cannot detect that neighboring sentence swaps create narrative chaos at the local level.</p>
+            </div>
+        </div>
+
+        <!-- Challenge 4B: Chronological Variability - Global Disruption -->
+        <div class="problem-card rounded-xl p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-sync-alt text-red-600 text-2xl mr-4"></i>
+                <div>
+                    <h3 class="text-2xl font-semibold text-red-800">Challenge 4B: Chronological Variability (Global Disruption)</h3>
+                    <div class="limitation-badge px-3 py-1 rounded-full text-xs font-semibold mt-2">
+                        Half Paragraph Rotated
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="example-box">
+                    <h5><i class="fas fa-file-text"></i>Reference</h5>
+                    <p>
+                        <span class="text-original">The old market bell rings, starting a busy market. Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around. The steady ring of the bell sets the pace for the day. A wise old vendor stops by his stall, giving advice to those who pass by. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong. Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span>
+                    </p>
+                </div>
+                <div class="example-box">
+                    <h5><i class="fas fa-sync-alt"></i>Half Paragraph Rotated</h5>
+                    <p>
+                        <span class="text-moved">A wise old vendor stops by his stall, giving advice to those who pass by. As the market gets busy, the bell rings again at midday, reminding everyone of the community spirit. A light rain briefly slows the crowd, but everyone's spirit stays strong. Local storytellers tell simple tales that catch everyone's attention. As evening comes, the old bell rings one last time, perfectly echoing the start of the day.</span> 
+                        <span class="text-moved">The old market bell rings, starting a busy market. Vendors open their bright stalls in the busy square, while the smell of fresh bread fills the air. A young seller shouts out good deals as curious people gather around. The steady ring of the bell sets the pace for the day.</span>
+                    </p>
+                    <div class="gas-score-display">
+                        <div class="gas-score-number">0.981</div>
+                        <div class="gas-score-label">GAS Score</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="limitation-highlight mt-6">
+                <h4 class="font-semibold text-red-800 mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>GAS Limitation: Insensitive to Global Chronological Disruption
+                </h4>
+                <p class="text-red-700">Even with major global chronological disruption (half paragraph rotation), GAS maintains an excellent score (0.981). Global embeddings cannot capture that ending events occur before beginning events, breaking narrative flow.</p>
+            </div>
+        </div>
+
+        <!-- Summary Table -->
+        <div class="summary-table">
+            <h3 class="text-2xl font-bold text-slate-800 mb-6 text-center">
+                <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                GAS Performance Summary
+            </h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Challenge Type</th>
+                        <th>Specific Challenge</th>
+                        <th>GAS Score</th>
+                        <th>Performance Assessment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="challenge-name">Expressive Variability</td>
+                        <td>Valid Paraphrasing</td>
+                        <td class="score-excellent">0.897</td>
+                        <td class="score-excellent">Excellent - Recognizes semantic preservation</td>
+                    </tr>
+                    <tr>
+                        <td class="challenge-name">Descriptive Variability</td>
+                        <td>Brevity (65% shorter)</td>
+                        <td class="score-excellent">0.941</td>
+                        <td class="score-excellent">Excellent - Length-agnostic evaluation</td>
+                    </tr>
+                    <tr>
+                        <td class="challenge-name">Descriptive Variability</td>
+                        <td>Verbosity (377% longer)</td>
+                        <td class="score-excellent">0.886</td>
+                        <td class="score-excellent">Excellent - Detail-level tolerance</td>
+                    </tr>
+                    <tr>
+                        <td class="challenge-name">Narrative Variability</td>
+                        <td>Valid Reordering</td>
+                        <td class="score-excellent">0.893</td>
+                        <td class="score-excellent">Excellent - Order-independent assessment</td>
+                    </tr>
+                    <tr>
+                        <td class="challenge-name">Chronological Variability</td>
+                        <td>Local Disruption</td>
+                        <td class="score-poor">0.991</td>
+                        <td class="score-poor">Poor - Blind to local chronological chaos</td>
+                    </tr>
+                    <tr>
+                        <td class="challenge-name">Chronological Variability</td>
+                        <td>Global Disruption</td>
+                        <td class="score-poor">0.981</td>
+                        <td class="score-poor">Poor - Insensitive to global ordering issues</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- GAS Strengths and Limitations -->
+        <div class="highlight-box rounded-xl p-8 mb-12">
+            <h3 class="text-2xl font-bold text-purple-800 mb-6 text-center">
+                <i class="fas fa-balance-scale text-purple-600 mr-2"></i>
+                GAS Strengths and Critical Limitations
+            </h3>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="text-xl font-semibold text-green-800 mb-4">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        What GAS Does Well
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="strength-highlight">
+                            <h5 class="font-semibold text-green-800 mb-1">Semantic Alignment Recognition</h5>
+                            <p class="text-green-700 text-sm">Excellent at identifying when paraphrasing preserves meaning (0.897 score)</p>
+                        </div>
+                        <div class="strength-highlight">
+                            <h5 class="font-semibold text-green-800 mb-1">Length-Agnostic Evaluation</h5>
+                            <p class="text-green-700 text-sm">Handles both brevity and verbosity effectively (0.941 and 0.886 scores)</p>
+                        </div>
+                        <div class="strength-highlight">
+                            <h5 class="font-semibold text-green-800 mb-1">Thematic Coherence Assessment</h5>
+                            <p class="text-green-700 text-sm">Captures overall narrative themes regardless of expression style</p>
+                        </div>
+                        <div class="strength-highlight">
+                            <h5 class="font-semibold text-green-800 mb-1">Global Perspective</h5>
+                            <p class="text-green-700 text-sm">Provides holistic view of semantic alignment across entire texts</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-xl font-semibold text-red-800 mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                        Critical Limitations
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="limitation-highlight">
+                            <h5 class="font-semibold text-red-800 mb-1">Chronological Blindness</h5>
+                            <p class="text-red-700 text-sm">Cannot detect local (0.991) or global (0.981) chronological disruptions</p>
+                        </div>
+                        <div class="limitation-highlight">
+                            <h5 class="font-semibold text-red-800 mb-1">No Local Content Assessment</h5>
+                            <p class="text-red-700 text-sm">Global embeddings miss detailed event-level accuracy and coverage</p>
+                        </div>
+                        <div class="limitation-highlight">
+                            <h5 class="font-semibold text-red-800 mb-1">Lacks Granular Analysis</h5>
+                            <p class="text-red-700 text-sm">Cannot identify specific content omissions or hallucinations</p>
+                        </div>
+                        <div class="limitation-highlight">
+                            <h5 class="font-semibold text-red-800 mb-1">No Narrative Flow Evaluation</h5>
+                            <p class="text-red-700 text-sm">Insensitive to logical sequence and temporal progression</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Building the Case for LAS and NAS -->
+        <div class="solution-card rounded-xl p-8">
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-teal-800 mb-4">
+                    <i class="fas fa-puzzle-piece text-teal-600 mr-2"></i>
+                    Why GAS Alone Is Insufficient
+                </h3>
+                <p class="text-lg text-teal-700 leading-relaxed">
+                    While GAS excels at global semantic alignment, our analysis reveals <strong>critical gaps</strong> that necessitate additional components in the VCS framework.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div class="bg-white bg-opacity-60 p-6 rounded-lg border border-teal-200">
+                    <h4 class="text-xl font-semibold text-teal-800 mb-4">
+                        <i class="fas fa-tasks text-teal-600 mr-2"></i>
+                        Need for Local Alignment Score (LAS)
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="bg-red-50 p-3 rounded border border-red-200">
+                            <h5 class="font-semibold text-red-800 text-sm mb-1">Problem: No Local Content Assessment</h5>
+                            <p class="text-red-700 text-xs">GAS cannot detect specific content omissions, hallucinations, or event-level inaccuracies.</p>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded border border-red-200">
+                            <h5 class="font-semibold text-red-800 text-sm mb-1">Problem: Lacks Granular Analysis</h5>
+                            <p class="text-red-700 text-xs">Global embeddings miss detailed semantic correspondence between specific text segments.</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded border border-green-200">
+                            <h5 class="font-semibold text-green-800 text-sm mb-1">LAS Solution</h5>
+                            <p class="text-green-700 text-xs">Chunk-level semantic matching with precision/recall evaluation for detailed content assessment.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white bg-opacity-60 p-6 rounded-lg border border-teal-200">
+                    <h4 class="text-xl font-semibold text-teal-800 mb-4">
+                        <i class="fas fa-route text-teal-600 mr-2"></i>
+                        Need for Narrative Alignment Score (NAS)
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="bg-red-50 p-3 rounded border border-red-200">
+                            <h5 class="font-semibold text-red-800 text-sm mb-1">Problem: Chronological Blindness</h5>
+                            <p class="text-red-700 text-xs">GAS cannot detect local (0.991) or global (0.981) chronological disruptions that break narrative flow.</p>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded border border-red-200">
+                            <h5 class="font-semibold text-red-800 text-sm mb-1">Problem: No Temporal Assessment</h5>
+                            <p class="text-red-700 text-xs">Global embeddings are insensitive to logical sequence and temporal progression.</p>
+                        </div>
+                        <div class="bg-green-50 p-3 rounded border border-green-200">
+                            <h5 class="font-semibold text-green-800 text-sm mb-1">NAS Solution</h5>
+                            <p class="text-green-700 text-xs">Distance-based and line-based chronological evaluation with flexible tolerance parameters.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 p-6 bg-white bg-opacity-60 rounded-lg border border-teal-200">
+                <h4 class="text-lg font-semibold text-teal-800 mb-3 text-center">
+                    <i class="fas fa-arrow-right text-teal-600 mr-2"></i>
+                    The Complete VCS Framework
+                </h4>
+                <p class="text-teal-700 text-center leading-relaxed mb-4">
+                    <strong>VCS = f(GAS, LAS, NAS)</strong> provides comprehensive evaluation by combining:
+                </p>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                        <div class="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg">
+                            <strong>GAS</strong><br>
+                            <span class="text-sm">Global Semantic Alignment</span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="bg-green-100 text-green-800 px-3 py-2 rounded-lg">
+                            <strong>LAS</strong><br>
+                            <span class="text-sm">Local Content Assessment</span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="bg-purple-100 text-purple-800 px-3 py-2 rounded-lg">
+                            <strong>NAS</strong><br>
+                            <span class="text-sm">Chronological Integrity</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="concept-card rounded-xl p-8 mt-12">
+            <div class="flex items-start">
+                <i class="fas fa-arrow-right text-teal-600 text-2xl mr-4 mt-1"></i>
+                <div>
+                    <h4 class="text-xl font-semibold text-teal-800 mb-3">Explore Additional VCS Components</h4>
+                    <p class="text-teal-700 mb-4 text-lg leading-relaxed">
+                        Now that you understand GAS capabilities and limitations, continue exploring how Local Alignment Score (LAS) and Narrative Alignment Score (NAS) address the gaps in comprehensive video description evaluation.
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-white bg-opacity-60 p-4 rounded-lg border border-teal-200 hover:shadow-lg transition-all duration-300">
+                            <h5 class="font-semibold text-teal-800 mb-2">
+                                <i class="fas fa-tasks text-teal-600 mr-2"></i>
+                                Local Alignment Score (LAS)
+                            </h5>
+                            <p class="text-sm text-teal-700">Learn how chunk-level semantic matching provides granular content assessment and event-level accuracy evaluation.</p>
+                        </div>
+                        <div class="bg-white bg-opacity-60 p-4 rounded-lg border border-teal-200 hover:shadow-lg transition-all duration-300">
+                            <h5 class="font-semibold text-teal-800 mb-2">
+                                <i class="fas fa-route text-teal-600 mr-2"></i>
+                                Narrative Alignment Score (NAS)
+                            </h5>
+                            <p class="text-sm text-teal-700">Understand how chronological evaluation addresses both local and global temporal coherence in narrative assessment.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

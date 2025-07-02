@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line-based Narrative Alignment Score (NAS-L)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* --- SMOOTHNESS & PERFORMANCE ENHANCEMENTS --- */
+        html {
+            scroll-behavior: smooth; /* Enables smooth scrolling for anchor links and scrollIntoView */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 1.5s cubic-bezier(0.25, 0.1, 0.25, 1); /* Softer, longer background transition */
+        }
+
+        /* Use a consistent, refined easing for most UI transitions */
+        :root {
+            --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --ease-out-cubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+        }
+
+        /* --- Glassmorphism & Enhanced Card Styles --- */
+        .interactive-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            /* Transition specific properties for better performance */
+            transition: transform 0.35s var(--ease-out-cubic), 
+                        box-shadow 0.35s var(--ease-out-cubic), 
+                        border-color 0.35s var(--ease-out-cubic);
+            will-change: transform, box-shadow; /* Hint to the browser for optimization */
+        }
+        .interactive-card:hover {
+            box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 15px -8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px); /* Slightly more pronounced lift */
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Keeping card themes with subtle adjustments for glass effect */
+        .demo-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 250, 252, 0.5) 100%); border-color: rgba(226, 232, 240, 0.7); }
+        .intro-card { background: linear-gradient(135deg, rgba(254, 252, 232, 0.6) 0%, rgba(254, 243, 199, 0.5) 100%); border-color: rgba(251, 191, 36, 0.5); }
+        .metrics-card { background: linear-gradient(135deg, rgba(240, 249, 255, 0.6) 0%, rgba(219, 234, 254, 0.5) 100%); border-color: rgba(147, 197, 253, 0.6); }
+        .formula-card { background: linear-gradient(135deg, rgba(237, 233, 254, 0.6) 0%, rgba(221, 214, 254, 0.5) 100%); border-color: rgba(196, 181, 253, 0.6); }
+
+        /* Ghost score style for predictions */
+        .ghost-score {
+            color: #9ca3af;
+            font-weight: 700;
+        }
+
+        /* Tooltips */
+        #chartTooltip {
+            position: fixed; background: rgba(45, 55, 72, 0.9); backdrop-filter: blur(5px); color: white; padding: 8px 12px; border-radius: 6px;
+            font-size: 0.8rem; z-index: 100; pointer-events: none; opacity: 0; 
+            transition: opacity 0.25s var(--ease-out-quad), transform 0.25s var(--ease-out-quad);
+            transform: scale(0.95);
+        }
+        #chartTooltip.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        #chartTooltip.standard { border-left: 4px solid #22c55e; }
+        #chartTooltip.lct-capped { border-left: 4px solid #f59e0b; }
+        #chartTooltip.invalid { border-left-color: #ef4444; }
+        
+        /* Segment List Styles */
+        .segment-list ul li { 
+            margin-bottom: 4px; line-height: 1.4; font-size: 0.8rem; color: #4b5563; padding: 4px 8px; border-radius: 0.375rem; 
+            cursor: pointer; 
+            transition: background-color 0.25s var(--ease-out-quad), border-color 0.25s var(--ease-out-quad), transform 0.25s var(--ease-out-quad), box-shadow 0.25s var(--ease-out-quad);
+            border: 1px solid #e5e7eb; user-select: none; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.4); 
+            will-change: background-color, transform;
+        }
+        .segment-list ul li:hover { background-color: #f0fdfa; border-color: #ccfbf1; transform: translateX(2px); }
+        .segment-list ul li.highlight { background-color: #cffafe !important; border-color: #67e8f9 !important; transform: scale(1.03); box-shadow: 0 4px 12px rgba(103, 232, 249, 0.6); }
+        .segment-list ul li.inactive-chunk { text-decoration: line-through; color: #9ca3af; background-color: #f3f4f6; }
+        .segment-list ul li.inactive-chunk:hover { background-color: #e5e7eb; }
+        .segment-list ul li.dragging { opacity: 0.5; background-color: #c7d2fe !important; cursor: grabbing; transform: scale(1.05); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.7; } }
+        .drag-placeholder { height: 2.5em; background-color: #eef2ff; border: 2px dashed #a5b4fc; margin-bottom: 4px; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #64748b; animation: pulse 1.5s infinite; }
+
+        /* Path Animation */
+        .path-segment-animated {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw-path 1.2s var(--ease-out-cubic) forwards; /* Smoother easing */
+        }
+        @keyframes draw-path {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .path-segment-standard, .path-segment-lct-capped, .path-segment-invalid { 
+            stroke-width: 3.5px; 
+            transition: stroke 0.3s var(--ease-out-quad);
+        }
+        .path-segment-standard { stroke: #22c55e; }
+        .path-segment-lct-capped { stroke: #f59e0b; }
+        .path-segment-invalid { stroke: #ef4444; stroke-dasharray: 4 2; }
+        
+        .path-point-marker { 
+            position: absolute; width: 12px; height: 12px; border-radius: 50%; background-color: #8b5cf6; 
+            border: 2px solid white; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 5; 
+            transition: transform 0.25s var(--ease-out-cubic), background-color 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+            will-change: transform;
+        }
+        .path-point-marker:hover { transform: scale(1.4); }
+        .path-point-marker.dragging { background-color: #a78bfa; box-shadow: 0 4px 8px rgba(0,0,0,0.4); transform: scale(1.5); cursor: grabbing; }
+
+        /* Tour Styles */
+        #tour-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9998; 
+            opacity: 0; transition: opacity 0.4s ease-in-out; pointer-events: none; 
+        }
+        .tour-highlight { 
+            position: relative; z-index: 9999; 
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), 0 0 20px rgba(255, 255, 255, 0.9); 
+            border-radius: 0.5rem; transition: box-shadow 0.4s ease-in-out; 
+        }
+        #tour-callout { 
+            position: absolute; background: white; color: #334155; padding: 1rem; border-radius: 0.5rem; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px; 
+            border-left: 4px solid #3b82f6; 
+            transition: opacity 0.3s var(--ease-out-cubic), transform 0.3s var(--ease-out-cubic);
+            transform: translateY(10px);
+            opacity: 0;
+        }
+        #tour-callout.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        #tour-callout button { 
+            background-color: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; 
+            transition: background-color 0.2s var(--ease-out-quad), transform 0.2s var(--ease-out-quad); 
+        }
+        #tour-callout button:hover { background-color: #2563eb; transform: translateY(-1px); }
+        
+        /* Other minor styles */
+        .axis-label { position: absolute; font-size: 0.75rem; color: #475569; font-weight: 500; white-space: nowrap; z-index: 6; }
+        .ideal-mapping-window { position: absolute; border: 2px solid #0d9488; background-color: rgba(20, 184, 166, 0.1); box-sizing: border-box; z-index: 1; transition: all 0.3s var(--ease-out-quad); pointer-events: none; border-radius: 0.25rem; }
+        .chart-grid-background { background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px); }
+        .ideal-paths-svg, .actual-path-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .ideal-paths-svg { z-index: 2; }
+        .actual-path-svg { z-index: 4; }  
+        .floor-path-line, .ceil-path-line { stroke-width: 2px; fill: none; stroke-dasharray: 4; transition: d 0.3s var(--ease-out-quad); }
+        .floor-path-line { stroke: #0ea5e9; }
+        .ceil-path-line { stroke: #ec4899; }
+        .preset-btn { transition: all 0.2s var(--ease-out-quad); background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); }
+        .preset-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+        .pattern-bg { background-image: radial-gradient(circle at 2px 2px, rgba(20, 184, 166, 0.1) 1px, transparent 0); background-size: 20px 20px; }
+        .math-formula { background: linear-gradient(135deg, rgba(248, 250, 252, 0.7) 0%, rgba(241, 245, 249, 0.6) 100%); border: 1px solid #cbd5e1; font-family: 'Courier New', monospace; }
+        .step-number { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.875rem; flex-shrink: 0; }
+        details summary { cursor: pointer; user-select: none; transition: color 0.2s var(--ease-out-quad); }
+        details summary:hover { color: #1d4ed8; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary .summary-icon { display: inline-block; margin-right: 0.5rem; transition: transform 0.25s var(--ease-out-cubic); }
+        details[open] summary .summary-icon { transform: rotate(90deg); }
+
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased">
+    <div id="app-background" class="fixed inset-0 z-[-1] transition-all duration-1000"></div>
+    <div id="tour-overlay"></div>
+    <div id="chartTooltip"></div>
+
+    <main class="w-full max-w-8xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 relative">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mr-2">Interactive Demo</div>
+                <div class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">Narrative Flow Analysis</div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-800 bg-clip-text text-transparent">Line-based Narrative Alignment Score (NAS-L)</h1>
+            <p class="mt-3 text-lg text-slate-600 max-w-3xl mx-auto">Evaluate narrative flow by measuring the geometric length of alignment paths against ideal bounds.</p>
+            <button id="start-tour-btn" class="absolute top-0 right-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105">
+                <i class="fas fa-magic mr-2"></i>Start Tour
+            </button>
+        </div>
+        
+        <!-- Introduction Section -->
+        <div class="mb-8">
+            <div id="tour-step-1" class="intro-card interactive-card rounded-xl p-6">
+                <div class="flex items-center mb-4"><i class="fas fa-lightbulb text-amber-600 text-xl mr-3"></i><h2 class="text-xl font-semibold text-amber-800">Introduction to Line-based NAS</h2></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-question-circle text-amber-500 mr-2"></i>What is NAS-L?</h3><p class="text-sm text-slate-700">NAS-L measures narrative coherence by calculating the geometric length of the alignment path between text segments. Unlike distance-based metrics, it captures the smoothness of narrative progression.</p></div>
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>Why NAS-L?</h3><p class="text-sm text-slate-700">Traditional NAS-D can miss subtle reorderings like "neighbor swapping" that disrupt local narrative flow. NAS-L detects these issues by penalizing longer, more chaotic alignment paths.</p></div>
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-cogs text-amber-500 mr-2"></i>How it Works</h3><p class="text-sm text-slate-700">NAS-L computes ideal floor and ceiling path lengths through mapping windows, then compares the actual alignment path length against these bounds for scoring.</p></div>
+                </div>
+                <details id="tour-step-2" class="mb-4">
+                    <summary class="font-semibold text-amber-700 mb-3 flex items-center"><i class="fas fa-chevron-right summary-icon"></i>Algorithm Details & Mathematics</summary>
+                    <div class="mt-4 space-y-6 ml-6 border-l-2 border-slate-200 pl-6">
+                        
+                        <!-- Step 1 -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4">1</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Compute Ideal Line Band (Floor & Ceiling)</h4>
+                                <p class="text-sm text-slate-600 mb-2">Using dynamic programming, the algorithm finds the shortest possible (floor) and longest possible (ceiling) paths that can navigate through a series of pre-defined <strong class="text-teal-700">mapping windows</strong>. This creates an "ideal corridor" for the narrative path.</p>
+                                <div class="math-formula p-3 rounded-lg text-sm">
+                                    <h5 class="font-semibold text-slate-700 mb-1">DP Recurrence Relation:</h5>
+                                    <code class="text-xs block">D(i, y_curr) = min/max [ D(i-1, y_prev) + dist(...) ]</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4">2</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Calculate Actual Path Length</h4>
+                                <p class="text-sm text-slate-600 mb-2">The geometric length of the user-defined path is calculated segment by segment. The calculation is conditional and respects the <strong class="text-purple-700">LCT (Local Chronology Tolerance)</strong> parameter.</p>
+                                 <div class="math-formula p-3 rounded-lg text-sm space-y-2">
+                                     <div>
+                                         <h5 class="font-semibold text-slate-700">Segment Length (sᵢ):</h5>
+                                         <code class="text-xs block">sᵢ = sqrt(dxᵢ² + dyᵢ²)</code>
+                                     </div>
+                                     <div>
+                                          <h5 class="font-semibold text-slate-700">Condition (LCT=0):</h5>
+                                          <code class="text-xs block">Length is calculated only if 0 ≤ dy ≤ Threshold</code>
+                                     </div>
+                                     <div>
+                                          <h5 class="font-semibold text-slate-700">Condition (LCT>0):</h5>
+                                          <code class="text-xs block">Length is calculated if |dy| ≤ Expanded_Threshold</code>
+                                     </div>
+                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4">3</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Score Normalization</h4>
+                                <p class="text-sm text-slate-600 mb-2">The final score is normalized based on where the <strong class="text-violet-600">Actual Length (a)</strong> falls relative to the <strong class="text-sky-600">Floor (f)</strong> and <strong class="text-pink-600">Ceiling (c)</strong> bounds.</p>
+                                <div class="math-formula p-3 rounded-lg text-sm">
+                                    <h5 class="font-semibold text-slate-700 mb-1">NAS-L Score:</h5>
+                                    <code class="text-xs block">if f ≤ a ≤ c: return 1.0</code>
+                                    <code class="text-xs block">if a < f: return a / f</code>
+                                    <code class="text-xs block">if a > c: return c / a</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div id="tour-step-4" class="demo-card interactive-card rounded-xl p-4">
+                        <div class="text-center mb-4"><div class="inline-flex items-center bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-route mr-1"></i>PRECISION NAS-L</div><h2 class="text-lg font-bold text-slate-800">Gen → Ref Alignment</h2></div>
+                        <div class="relative w-full max-w-md mx-auto pt-4 pb-36 pl-20 pr-4">
+                            <div class="absolute top-1/2 -left-8 -translate-y-16 -rotate-90 font-semibold text-sm text-slate-600 whitespace-nowrap">Reference Chunks</div>
+                            <div class="absolute bottom-24 left-1/2 -translate-x-1/4 font-semibold text-sm text-slate-600">Generated Chunks</div>
+                            <div class="relative w-full aspect-square">
+                                <div id="precisionChartGrid" class="absolute inset-0 bg-white rounded-lg chart-grid-background border border-slate-200">
+                                    
+                                    <div id="precisionIdealMappingContainer"></div>
+                                    <svg class="ideal-paths-svg" id="precisionIdealPathsSvg"></svg>
+                                    <svg class="actual-path-svg" id="precisionActualPathSvg"></svg>
+                                    <div id="precisionMarkerContainer"></div>
+                                    <div id="precisionAxisLabelContainerY"></div>
+                                    <div id="precisionAxisLabelContainerX"></div>
+                                </div>
+                            </div>
+                            <div id="precisionChartMetrics" class="absolute -bottom-2 left-0 right-0 grid grid-cols-2 gap-x-4 gap-y-1 text-center text-xs text-slate-600 bg-white/80 p-2 rounded-md">
+                                <div><span>Floor Len:</span><br><span id="precisionFloorLength" class="font-bold text-slate-800">0.00</span> <span id="precisionFloorLengthPreview" class="ghost-score"></span></div>
+                                <div><span>Ceil Len:</span><br><span id="precisionCeilLength" class="font-bold text-slate-800">0.00</span> <span id="precisionCeilLengthPreview" class="ghost-score"></span></div>
+                                <div><span>Actual Len:</span><br><span id="precisionActualLength" class="font-bold text-purple-600">0.00</span> <span id="precisionActualLengthPreview" class="ghost-score"></span></div>
+                                <div><span>Score:</span><br><span id="precisionLineNasScore" class="font-bold text-teal-600 text-sm">0.000</span> <span id="precisionLineNasScorePreview" class="ghost-score"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="demo-card interactive-card rounded-xl p-4">
+                        <div class="text-center mb-4"><div class="inline-flex items-center bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-route mr-1"></i>RECALL NAS-L</div><h2 class="text-lg font-bold text-slate-800">Ref → Gen Alignment</h2></div>
+                        <div class="relative w-full max-w-md mx-auto pt-4 pb-36 pl-20 pr-4">
+                            <div class="absolute top-1/2 -left-8 -translate-y-16 -rotate-90 font-semibold text-sm text-slate-600 whitespace-nowrap">Generated Chunks</div>
+                            <div class="absolute bottom-24 left-1/2 -translate-x-1/4 font-semibold text-sm text-slate-600">Reference Chunks</div>
+                            <div class="relative w-full aspect-square">
+                                <div id="recallChartGrid" class="absolute inset-0 bg-white rounded-lg chart-grid-background border border-slate-200">
+                                    
+                                    <div id="recallIdealMappingContainer"></div>
+                                    <svg class="ideal-paths-svg" id="recallIdealPathsSvg"></svg>
+                                    <svg class="actual-path-svg" id="recallActualPathSvg"></svg>
+                                    <div id="recallMarkerContainer"></div>
+                                    <div id="recallAxisLabelContainerY"></div>
+                                    <div id="recallAxisLabelContainerX"></div>
+                                </div>
+                            </div>
+                            <div id="recallChartMetrics" class="absolute -bottom-2 left-0 right-0 grid grid-cols-2 gap-x-4 gap-y-1 text-center text-xs text-slate-600 bg-white/80 p-2 rounded-md">
+                                <div><span>Floor Len:</span><br><span id="recallFloorLength" class="font-bold text-slate-800">0.00</span> <span id="recallFloorLengthPreview" class="ghost-score"></span></div>
+                                <div><span>Ceil Len:</span><br><span id="recallCeilLength" class="font-bold text-slate-800">0.00</span> <span id="recallCeilLengthPreview" class="ghost-score"></span></div>
+                                <div><span>Actual Len:</span><br><span id="recallActualLength" class="font-bold text-purple-600">0.00</span> <span id="recallActualLengthPreview" class="ghost-score"></span></div>
+                                <div><span>Score:</span><br><span id="recallLineNasScore" class="font-bold text-amber-600 text-sm">0.000</span> <span id="recallLineNasScorePreview" class="ghost-score"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="tour-step-5" class="demo-card interactive-card rounded-xl p-6">
+                    <div class="text-center mb-6"><h3 class="text-lg font-semibold text-slate-800 mb-2">Interactive Narrative Management</h3><p class="text-sm text-slate-500">Drag to reorder • Click to activate/deactivate • Hover items to see similarities on the grid</p></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="segment-list" id="referenceSegments"><div class="flex justify-between items-center mb-2"><h4 class="text-md font-semibold text-slate-700 flex items-center"><i class="fas fa-list text-teal-600 mr-2"></i>Reference (<span id="activeRefChunkCount">0</span>/<span id="totalRefChunkCount">0</span>)</h4><button id="resetRefOrderBtn" title="Reset Reference Order &amp; Reactivate All" class="text-slate-500 hover:text-blue-600 transition"><i class="fas fa-undo text-sm"></i></button></div><ul id="referenceSegmentsUl" class="space-y-1 h-72 overflow-y-auto pr-2 bg-slate-50/50 rounded p-2 border"></ul></div>
+                        <div class="segment-list" id="generatedSegments"><div class="flex justify-between items-center mb-2"><h4 class="text-md font-semibold text-slate-700 flex items-center"><i class="fas fa-list text-amber-600 mr-2"></i>Generated (<span id="activeGenChunkCount">0</span>/<span id="totalGenChunkCount">0</span>)</h4><button id="resetGenOrderBtn" title="Reset Generated Order &amp; Reactivate All" class="text-slate-500 hover:text-blue-600 transition"><i class="fas fa-undo text-sm"></i></button></div><ul id="generatedSegmentsUl" class="space-y-1 h-72 overflow-y-auto pr-2 bg-slate-50/50 rounded p-2 border"></ul></div>
+                    </div>
+                    <!-- New Advanced Interactions Tip Section -->
+                    <details class="mt-4">
+                        <summary class="font-semibold text-sm text-slate-600 hover:text-blue-600">Explore Advanced Interactions <i class="fas fa-chevron-down summary-icon text-xs"></i></summary>
+                        <div class="mt-2 space-y-3 text-xs text-slate-600 bg-slate-50/50 p-4 rounded-lg border">
+                            <p>▶ <strong>Simulate missing content:</strong> Disable chunks from the <strong>Generated</strong> list to see how the score changes.</p>
+                            <p>▶ <strong>Simulate extra content (hallucination):</strong> Disable chunks from the <strong>Reference</strong> list and observe the impact on the score.</p>
+                            <p>▶ <strong>Progressively disable chunks</strong> one by one from the beginning, middle, end, or at random to see how the ideal band and actual path react.</p>
+                            <p>▶ <strong>Observe the score jump:</strong> Notice that when you disable most of the content from either list, the score paradoxically jumps to 1.0. This is because the problem becomes too simple. See the <strong>Window Regularizer Demo</strong> to understand how this is fixed.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-6 space-y-6">
+                    <div id="tour-step-6" class="metrics-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center"><i class="fas fa-tachometer-alt text-blue-600 mr-2"></i>Live NAS-L Metrics</h3>
+                        <div class="space-y-4">
+                            <div class="text-center bg-blue-50/70 p-3 rounded-lg border border-blue-200">
+                                <label class="block text-sm font-medium text-blue-700 mb-1">Overall NAS-L (F1)</label>
+                                <span id="f1LineNasValue" class="text-4xl font-bold text-blue-600">0.000</span>
+                                <span id="f1LineNasValuePreview" class="text-4xl ghost-score"></span>
+                                <p class="text-xs text-slate-500 mt-1">Harmonic mean of P & R</p>
+                            </div>
+                               <div class="grid grid-cols-2 gap-4">
+                                   <div class="text-center">
+                                       <label class="block text-sm font-medium text-blue-700 mb-1">Precision NAS-L</label>
+                                       <span id="overallPrecisionNas" class="text-3xl font-bold text-teal-600">0.000</span>
+                                        <span id="overallPrecisionNasPreview" class="text-3xl ghost-score"></span>
+                                       <p class="text-xs text-slate-500 mt-1">Gen → Ref flow</p>
+                                   </div>
+                                   <div class="text-center">
+                                       <label class="block text-sm font-medium text-blue-700 mb-1">Recall NAS-L</label>
+                                       <span id="overallRecallNas" class="text-3xl font-bold text-amber-600">0.000</span>
+                                       <span id="overallRecallNasPreview" class="text-3xl ghost-score"></span>
+                                       <p class="text-xs text-slate-500 mt-1">Ref → Gen flow</p>
+                                   </div>
+                               </div>
+                        </div>
+                    </div>
+                    <div id="tour-step-lct" class="formula-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-purple-800 mb-3 flex items-center"><i class="fas fa-sliders-h text-purple-600 mr-2"></i>LCT Parameter</h3>
+                        <div class="flex items-center gap-4 mb-4"><label for="lctSlider" class="text-sm font-medium text-purple-700">Tolerance:</label><input type="range" id="lctSlider" min="0" max="5" value="0" step="1" class="flex-1 h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer"><span id="lctValueDisplay" class="text-lg font-bold text-purple-600 w-8 text-center">0</span></div>
+                        <div id="lctDescription" class="bg-purple-50/70 p-3 rounded-lg border border-purple-200 text-xs text-purple-700"></div>
+                        <!-- New LCT Warning Section -->
+                        <div class="mt-4 bg-amber-50/70 p-3 rounded-lg border border-amber-200 text-xs text-amber-800 flex items-start gap-2">
+                           <i class="fas fa-exclamation-triangle mt-1 text-amber-600"></i>
+                           <div>
+                               <strong>Important:</strong> First, visit the <a href="#" class="font-bold underline hover:text-amber-900">LCT Effect Demo</a> to understand its impact. For this demo, keep LCT at 0. You can return later to experiment with this slider.
+                           </div>
+                       </div>
+                    </div>
+                    <div id="tour-step-3" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-magic text-purple-600 mr-2"></i>Chronological Scenarios</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="handleScenarioClick('optimal')"><i class="fas fa-sort-numeric-down mr-2"></i>Optimal</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="handleScenarioClick('neighborSwap')"><i class="fas fa-exchange-alt mr-2"></i>Neighbor Swaps</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="handleScenarioClick('reverse')"><i class="fas fa-sort-numeric-up mr-2"></i>Reverse</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="handleScenarioClick('minorDisorders')"><i class="fas fa-random mr-2"></i>Minor Disorders</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="handleScenarioClick('majorDisorder')"><i class="fas fa-exclamation-triangle mr-2"></i>Major Disorder</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="handleScenarioClick('rotateHalf')"><i class="fas fa-sync-alt mr-2"></i>Rotate Half</button>
+                        </div>
+                        <!-- Div for Dynamic Scenario Tips -->
+                        <div id="scenarioTip" class="mt-4 bg-slate-50/70 p-3 rounded-lg border border-slate-200 text-xs text-slate-600 transition-all duration-300">
+                           <p><strong>Tip:</strong> Start with "Neighbor Swaps" to see how NAS-L detects subtle flow disruptions!</p>
+                       </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- DATA ---
+        const masterReferenceChunks = ["The old market bell rings starting a busy market", "Vendors open their bright stalls in the busy square while the smell of fresh bread fills the air", "A young seller shouts out good deals as curious people gather around", "The steady ring of the bell sets the pace for the day", "A wise old vendor stops by his stall giving advice to those who pass by", "As the market gets busy the bell rings again at midday reminding everyone of the community spirit", "A light rain briefly slows the crowd but everyone is spirit stays strong", "Local storytellers tell simple tales that catch everyone is attention", "As evening comes the old bell rings one last time perfectly echoing the start of the day"];
+        const masterGeneratedChunks = ["At first light the town s antique bell clangs signalling that the market is open for business", "Stalls spring to life all around the square their owners lifting colourful awnings while the warm scent of freshbaked bread drifts through the crowd", "A lively young hawker calls out bargains drawing curious shoppers closer", "That bell keeps time for everyone its steady peal guiding the morning rush", "Nearby an older merchant pauses at his booth offering bits of seasoned advice to anyone who will listen", "When noon rolls around the bell sounds again a friendly reminder of the shared spirit that holds the place together", "A brief shower scatters a few people but the mood never really fades", "Storytellers soon reclaim the moment with simple tales that pull listeners back in", "As dusk settles the same bell rings one final note neatly bookending the day it helped begin"];
+        const masterSimilarityValues = [[0.737, 0.360, 0.286, 0.461, 0.284, 0.388, 0.062, 0.139, 0.396], [0.462, 0.783, 0.295, 0.269, 0.264, 0.227, 0.142, 0.158, 0.232], [0.244, 0.238, 0.814, 0.105, 0.337, 0.138, 0.120, 0.169, 0.084], [0.555, 0.259, 0.100, 0.734, 0.137, 0.593, 0.167, 0.199, 0.656], [0.258, 0.254, 0.293, 0.168, 0.774, 0.169, 0.110, 0.165, 0.151], [0.569, 0.340, 0.248, 0.483, 0.241, 0.764, 0.180, 0.216, 0.507], [0.134, 0.219, 0.106, 0.243, 0.133, 0.239, 0.689, 0.183, 0.177], [0.261, 0.259, 0.218, 0.266, 0.274, 0.286, 0.220, 0.679, 0.257], [0.537, 0.277, 0.059, 0.549, 0.218, 0.608, 0.192, 0.212, 0.869]];
+
+        // --- STATE & DOM ---
+        let activeReferenceIndices = [], activeGeneratedIndices = [];
+        let actualPathPositions = { precision: [], recall: [] };
+        let actualPathSegments = { precision: [], recall: [] };
+        // Store the ideal bands to prevent recalculation during drag previews
+        let idealBands = { precision: null, recall: null }; 
+        let currentLct = 0;
+        let animationFrameId = null;
+        let isMarkerDragging = false; 
+        let draggedItemInfo = { element: null, originalIndex: null, type: null, placeholder: null };
+        let draggedMarkerInfo = { chartType: null, id: null, element: null, chartGrid: null, startY: 0, startX: 0, mode: null, targetX: null };
+        const lctSlider = document.getElementById('lctSlider');
+        const lctValueDisplay = document.getElementById('lctValueDisplay');
+        const lctDescription = document.getElementById('lctDescription');
+        const referenceSegmentsUl = document.getElementById('referenceSegmentsUl');  
+        const generatedSegmentsUl = document.getElementById('generatedSegmentsUl');
+        const chartTooltip = document.getElementById('chartTooltip');
+        const appBackground = document.getElementById('app-background');
+        const charts = {
+            precision: { grid: document.getElementById('precisionChartGrid'), idealContainer: document.getElementById('precisionIdealMappingContainer'), markerContainer: document.getElementById('precisionMarkerContainer'), idealPathsSvg: document.getElementById('precisionIdealPathsSvg'), actualPathSvg: document.getElementById('precisionActualPathSvg'), axisX: document.getElementById('precisionAxisLabelContainerX'), axisY: document.getElementById('precisionAxisLabelContainerY'), floorLength: document.getElementById('precisionFloorLength'), ceilLength: document.getElementById('precisionCeilLength'), actualLength: document.getElementById('precisionActualLength'), nasScore: document.getElementById('precisionLineNasScore'), floorLengthPreview: document.getElementById('precisionFloorLengthPreview'), ceilLengthPreview: document.getElementById('precisionCeilLengthPreview'), actualLengthPreview: document.getElementById('precisionActualLengthPreview'), nasScorePreview: document.getElementById('precisionLineNasScorePreview') },
+            recall: { grid: document.getElementById('recallChartGrid'), idealContainer: document.getElementById('recallIdealMappingContainer'), markerContainer: document.getElementById('recallMarkerContainer'), idealPathsSvg: document.getElementById('recallIdealPathsSvg'), actualPathSvg: document.getElementById('recallActualPathSvg'), axisX: document.getElementById('recallAxisLabelContainerX'), axisY: document.getElementById('recallAxisLabelContainerY'), floorLength: document.getElementById('recallFloorLength'), ceilLength: document.getElementById('recallCeilLength'), actualLength: document.getElementById('recallActualLength'), nasScore: document.getElementById('recallLineNasScore'), floorLengthPreview: document.getElementById('recallFloorLengthPreview'), ceilLengthPreview: document.getElementById('recallCeilLengthPreview'), actualLengthPreview: document.getElementById('recallActualLengthPreview'), nasScorePreview: document.getElementById('recallLineNasScorePreview') }
+        };
+        const overallPreviews = {
+            f1: document.getElementById('f1LineNasValuePreview'),
+            precision: document.getElementById('overallPrecisionNasPreview'),
+            recall: document.getElementById('overallRecallNasPreview')
+        };
+        
+        // --- HELPER FUNCTIONS ---
+        // Easing function for smoother animations
+        const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+        
+        // --- TOUR MANAGER ---
+        const tourManager = {
+            isActive: false,
+            currentStep: 0,
+            overlay: document.getElementById('tour-overlay'),
+            steps: [
+                { selector: '#tour-step-1', text: 'Welcome! This card provides a high-level overview of the NAS-L metric.', position: 'bottom' },
+                { selector: '#tour-step-2', text: 'Click here to see the step-by-step algorithm and the formulas used to calculate the score.', position: 'bottom'},
+                { selector: '#tour-step-3', text: 'You can load pre-defined scenarios here. Let\'s click "Neighbor Swaps" to see how a small change affects the score.', position: 'left', action: () => handleScenarioClick('neighborSwap') },
+                { selector: '#tour-step-4', text: 'These charts show the alignment path. You can also drag points vertically to change their mapping, or drag them horizontally to swap their order. Notice the live score predictions as you drag!', position: 'top' },
+                { selector: '#tour-step-5', text: 'You can directly manipulate the narrative by dragging or disabling segments. Hover over points on the chart to see the corresponding segments highlighted here.', position: 'top' },
+                { selector: '#tour-step-lct', text: 'This slider adjusts the "Local Chronological Tolerance" (LCT), which allows for small, non-monotonic jumps in the path.', position: 'left' },
+                { selector: '#tour-step-6', text: 'The final scores are calculated here. The F1 score gives a balanced view of the narrative\'s overall quality. Enjoy exploring!', position: 'left' }
+            ],
+
+            start: function() {
+                this.isActive = true;
+                this.currentStep = 0;
+                this.overlay.style.pointerEvents = 'auto';
+                this.overlay.style.opacity = '1';
+                this.showStep();
+            },
+
+            next: function() {
+                this.cleanupCurrentStep();
+                this.currentStep++;
+                if (this.currentStep < this.steps.length) {
+                    if (this.steps[this.currentStep-1].action) {
+                       this.steps[this.currentStep-1].action();
+                    }
+                    setTimeout(() => this.showStep(), 400); // Wait for potential actions/scrolls
+                } else {
+                    this.end();
+                }
+            },
+            
+            showStep: function() {
+                const step = this.steps[this.currentStep];
+                const targetElement = document.querySelector(step.selector);
+                if (!targetElement) { this.end(); return; }
+
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+
+                setTimeout(() => {
+                    targetElement.classList.add('tour-highlight');
+                    
+                    const callout = document.createElement('div');
+                    callout.id = 'tour-callout';
+                    callout.innerHTML = `<p class="text-sm mb-4">${step.text}</p><div class="flex justify-end"><button onclick="tourManager.next()">Next &rarr;</button></div>`;
+                    document.body.appendChild(callout);
+                    
+                    const targetRect = targetElement.getBoundingClientRect();
+                    const calloutRect = callout.getBoundingClientRect();
+                    const margin = 15;
+
+                    const scrollY = window.scrollY || document.documentElement.scrollTop;
+                    const scrollX = window.scrollX || document.documentElement.scrollLeft;
+
+                    let top, left;
+
+                    switch (step.position) {
+                        case 'bottom':
+                            top = targetRect.bottom + scrollY + margin;
+                            left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2);
+                            break;
+                        case 'top':
+                            top = targetRect.top + scrollY - calloutRect.height - margin;
+                            left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2);
+                            break;
+                        case 'left':
+                            top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2);
+                            left = targetRect.left + scrollX - calloutRect.width - margin;
+                            break;
+                        case 'right':
+                            top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2);
+                            left = targetRect.right + scrollX + margin;
+                            break;
+                        default:
+                            top = targetRect.bottom + scrollY + margin;
+                            left = targetRect.left + scrollX;
+                    }
+                    
+                    const viewportRight = scrollX + window.innerWidth;
+                    const viewportBottom = scrollY + window.innerHeight;
+
+                    if (left < scrollX + margin) left = scrollX + margin;
+                    if (left + calloutRect.width > viewportRight - margin) left = viewportRight - calloutRect.width - margin;
+                    if (top < scrollY + margin) top = scrollY + margin;
+                    if (top + calloutRect.height > viewportBottom - margin) top = viewportBottom - calloutRect.height - margin;
+                    
+                    callout.style.top = `${top}px`;
+                    callout.style.left = `${left}px`;
+
+                    // Trigger the fade-in/up animation
+                    requestAnimationFrame(() => {
+                        callout.classList.add('visible');
+                    });
+                }, 350);
+            },
+            
+            cleanupCurrentStep: function() {
+                const oldHighlight = document.querySelector('.tour-highlight');
+                if (oldHighlight) oldHighlight.classList.remove('tour-highlight');
+                const oldCallout = document.getElementById('tour-callout');
+                if (oldCallout) oldCallout.remove();
+            },
+
+            end: function() {
+                this.cleanupCurrentStep();
+                this.isActive = false;
+                this.overlay.style.opacity = '0';
+                setTimeout(() => this.overlay.style.pointerEvents = 'none', 400);
+            }
+        };
+
+        // --- DYNAMIC BACKGROUND ---
+        function updateDynamicBackground(f1Score) {
+            const score = isNaN(f1Score) ? 0 : f1Score;
+            const hue = 120 * score;
+            const saturation = 30 + 40 * score;
+            const lightness = 85 + 10 * score;
+            const startColor = `hsl(170, ${saturation-10}%, ${lightness-5}%)`;
+            const endColor = `hsl(190, ${saturation}%, ${lightness}%)`;
+            appBackground.style.background = `linear-gradient(135deg, ${startColor} 0%, ${endColor} 100%)`;
+        }
+        
+        // --- CORE LOGIC ---
+        function _calculate_f1(p, r) { return (p + r === 0) ? 0.0 : (2 * p * r) / (p + r); }
+        
+        function computeActualLineLengthJS(actualPathPoints, totalRefChunks, totalGenChunks, lctValue, localFloorPathDyMap) {
+            if (!actualPathPoints || actualPathPoints.length <= 1) return { totalLength: 0.0, segments: [] };
+            const sortedPath = [...actualPathPoints].sort((a,b) => a.x - b.x);
+            let currentTotalLength = 0, pathSegments = [];
+            const mappingWindowHeight = totalGenChunks > 0 ? Math.ceil(totalRefChunks / totalGenChunks) : 0;
+            const ratio = totalGenChunks > 0 ? totalRefChunks / totalGenChunks : 0;
+            const ratioDecimalPart = ratio - Math.floor(ratio);
+            let lct_window_base = (totalRefChunks <= totalGenChunks) ? mappingWindowHeight : ((ratioDecimalPart > 0 && ratioDecimalPart <= 0.5) ? (2 * mappingWindowHeight) - 2 : (2 * mappingWindowHeight) - 1);
+            lct_window_base = Math.max(0, lct_window_base);
+            let expanded_lct_window;
+            if (totalRefChunks <= totalGenChunks) {
+                expanded_lct_window = lctValue > 0 ? lct_window_base + (mappingWindowHeight * lctValue) : lct_window_base;
+            } else {
+                if (ratioDecimalPart > 0 && ratioDecimalPart <= 0.5) {
+                    expanded_lct_window = lctValue > 0 ? lct_window_base + ((mappingWindowHeight - 1) * lctValue) : lct_window_base;
+                } else {
+                    expanded_lct_window = lctValue > 0 ? lct_window_base + (mappingWindowHeight * lctValue) : lct_window_base;
+                }
+            }
+
+            for (let i = 0; i < sortedPath.length - 1; i++) {
+                const p1 = sortedPath[i], p2 = sortedPath[i+1];
+                const dx_segment = p2.x - p1.x, dy_segment_raw = p2.y - p1.y;
+                if (dx_segment <= 0) continue;
+
+                const dy_for_eval = lctValue > 0 ? Math.abs(dy_segment_raw) : dy_segment_raw;
+                
+                let segmentLength = 0, calculation_method = "invalid";
+                
+                const is_standard_calculable = (lctValue > 0) 
+                    ? (dy_for_eval <= lct_window_base) 
+                    : (dy_for_eval >= 0 && dy_for_eval <= lct_window_base);
+
+                if (is_standard_calculable) {
+                    segmentLength = Math.sqrt(dx_segment**2 + dy_segment_raw**2);
+                    calculation_method = "standard";
+                } else if (lctValue > 0 && dy_for_eval <= expanded_lct_window) {
+                    if (localFloorPathDyMap[p1.x] !== undefined) {
+                        const floor_dy_val = Math.abs(localFloorPathDyMap[p1.x]);
+                        segmentLength = Math.sqrt(dx_segment**2 + floor_dy_val**2);
+                        calculation_method = "lct-capped";
+                    }
+                }
+
+                currentTotalLength += segmentLength;
+                pathSegments.push({ start: p1, end: p2, length: segmentLength, calculation_method });
+            }
+            return { totalLength: currentTotalLength, segments: pathSegments };
+        }
+
+        function calculateLineNAS(f, c, a) {
+            if (f === 0 && c === 0) return 1; if (a >= f && a <= c) return 1;
+            if (a < f) return f > 0 ? a / f : 0; return a > 0 ? c / a : 0;
+        }
+
+        // --- PREDICTION (GHOST) FUNCTIONS ---
+        function showScorePreview(tempPathPositions) {
+             const nRef = activeReferenceIndices.length, nGen = activeGeneratedIndices.length;
+             currentLct = parseInt(lctSlider.value);
+
+             // Calculate Precision Preview
+             const precBand = idealBands.precision;
+             const precPathInfo = computeActualLineLengthJS(tempPathPositions.precision, nRef, nGen, currentLct, precBand.floor_path_dy_map);
+             const precNas = calculateLineNAS(precBand.shortest_line, precBand.longest_line, precPathInfo.totalLength);
+
+             // Calculate Recall Preview
+             const recBand = idealBands.recall;
+             const recPathInfo = computeActualLineLengthJS(tempPathPositions.recall, nGen, nRef, currentLct, recBand.floor_path_dy_map);
+             const recNas = calculateLineNAS(recBand.shortest_line, recBand.longest_line, recPathInfo.totalLength);
+
+             const f1 = _calculate_f1(precNas, recNas);
+
+             // Update Precision chart metrics
+             charts.precision.actualLengthPreview.textContent = `→ ${precPathInfo.totalLength.toFixed(2)}`;
+             charts.precision.nasScorePreview.textContent = `→ ${precNas.toFixed(3)}`;
+             
+             // Update Recall chart metrics
+             charts.recall.actualLengthPreview.textContent = `→ ${recPathInfo.totalLength.toFixed(2)}`;
+             charts.recall.nasScorePreview.textContent = `→ ${recNas.toFixed(3)}`;
+
+             // Update Overall metrics
+             overallPreviews.f1.textContent = `→ ${f1.toFixed(3)}`;
+             overallPreviews.precision.textContent = `→ ${precNas.toFixed(3)}`;
+             overallPreviews.recall.textContent = `→ ${recNas.toFixed(3)}`;
+        }
+
+        function hideScorePreview() {
+            for (const key in charts) {
+                charts[key].actualLengthPreview.textContent = '';
+                charts[key].nasScorePreview.textContent = '';
+            }
+             for (const key in overallPreviews) {
+                overallPreviews[key].textContent = '';
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        function renderChart(chartType, results, isAnimating = false) {
+            const chartUI = charts[chartType];
+            const isRecall = chartType === 'recall';
+            const numX = isRecall ? activeReferenceIndices.length : activeGeneratedIndices.length;
+            const numY = isRecall ? activeGeneratedIndices.length : activeReferenceIndices.length;
+            const pathData = actualPathPositions[chartType] || [];
+            if (!isAnimating) {
+                chartUI.idealContainer.innerHTML = ''; chartUI.idealPathsSvg.innerHTML = '';
+                chartUI.axisX.innerHTML = ''; chartUI.axisY.innerHTML = '';
+                chartUI.grid.style.backgroundSize = (numX > 0 && numY > 0) ? `calc(100% / ${numX}) calc(100% / ${numY})` : 'none';
+                const xIndices = isRecall ? activeReferenceIndices : activeGeneratedIndices;
+                const yIndices = isRecall ? activeGeneratedIndices : activeReferenceIndices;
+                const yStep = Math.max(1, Math.ceil(numY / 6)); for (let i = 0; i < numY; i+=yStep) { const lbl=document.createElement('div'); lbl.className='axis-label'; lbl.textContent=yIndices[i]; lbl.style.left='-1rem'; lbl.style.top=`calc(100% - (${i}*100%/${numY}) - (50%/${numY}))`; lbl.style.transform='translateY(-50%) translateX(-100%)'; chartUI.axisY.appendChild(lbl); }
+                const xStep = Math.max(1, Math.ceil(numX / 6)); for (let i = 0; i < numX; i+=xStep) { const lbl=document.createElement('div'); lbl.className='axis-label'; lbl.textContent=xIndices[i]; lbl.style.bottom='-1.5rem'; lbl.style.left=`calc(${i}*100%/${numX} + 50%/${numX})`; lbl.style.transform='translateX(-50%)'; chartUI.axisX.appendChild(lbl); }
+                if(results.mappingWindows) results.mappingWindows.forEach((w, x) => { if(!w) return; const d=document.createElement('div'); d.className='ideal-mapping-window'; d.style.left=`calc(${x}*100%/${numX})`; d.style.width=`calc(100%/${numX})`; d.style.bottom=`calc(${w.start}*100%/${numY})`; d.style.height=`calc(${(w.end - w.start)}*100%/${numY})`; chartUI.idealContainer.appendChild(d); });
+                const drawIdealPath = (svg, pData, cls) => { if(!pData || pData.length===0) return; const pts=pData.map(p=>`${(p.x+0.5)*(chartUI.grid.clientWidth/numX)},${chartUI.grid.clientHeight-((p.y+0.5)*(chartUI.grid.clientHeight/numY))}`).join(' '); const l=document.createElementNS('http://www.w3.org/2000/svg','polyline'); l.setAttribute('points',pts); l.setAttribute('class',cls); svg.appendChild(l); };
+                drawIdealPath(chartUI.idealPathsSvg, results.idealBand?.floor_path, 'floor-path-line');
+                drawIdealPath(chartUI.idealPathsSvg, results.idealBand?.ceil_path, 'ceil-path-line');
+            }
+            chartUI.markerContainer.innerHTML = ''; chartUI.actualPathSvg.innerHTML = '';
+            pathData.forEach(marker => { const d=document.createElement('div'); d.className='path-point-marker'; d.dataset.id=marker.x; d.dataset.chartType=chartType; d.style.left=`calc(${(marker.x + 0.5) * 100 / numX}% - 6px)`; d.style.bottom=`calc(${(marker.y + 0.5) * 100 / numY}% - 6px)`; chartUI.markerContainer.appendChild(d); });
+            const segments = results.segments || [];
+            const chartWidth = chartUI.grid.clientWidth, chartHeight = chartUI.grid.clientHeight;
+            if (!segments || segments.length === 0 || !(chartWidth > 0) || !(chartHeight > 0)) return;
+
+            segments.forEach((seg, index) => {
+                if(!seg.start || !seg.end) return;
+                const x1 = (seg.start.x + 0.5) * (chartWidth / numX), y1 = chartHeight - ((seg.start.y + 0.5) * (chartHeight / numY));
+                const x2 = (seg.end.x + 0.5) * (chartWidth / numX), y2 = chartHeight - ((seg.end.y + 0.5) * (chartHeight / numY));
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1); line.setAttribute('y1', y1); line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+                const length = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+                line.setAttribute('class', 'path-segment-' + seg.calculation_method);
+                line.style.strokeDasharray = length;
+                line.style.strokeDashoffset = length;
+                // Animate with a slight stagger
+                line.style.animation = `draw-path 0.6s var(--ease-out-cubic) ${index * 0.04}s forwards`;
+                chartUI.actualPathSvg.appendChild(line);
+            });
+        }
+        
+        function updateAndRenderAll() {
+            // Prevent re-renders while an animation is running
+            if (animationFrameId) return;
+
+            currentLct = parseInt(lctSlider.value); lctValueDisplay.textContent = currentLct; updateLctDescription();
+            const nRef = activeReferenceIndices.length, nGen = activeGeneratedIndices.length;
+            
+            const precWins = get_mapping_windows_generic(nGen, nRef);
+            idealBands.precision = computeIdealNarrativeLineBandJS(precWins, nGen, nRef);
+            const precPathInfo = computeActualLineLengthJS(actualPathPositions.precision, nRef, nGen, currentLct, idealBands.precision.floor_path_dy_map);
+            const precNas = calculateLineNAS(idealBands.precision.shortest_line, idealBands.precision.longest_line, precPathInfo.totalLength);
+            actualPathSegments.precision = precPathInfo.segments;
+            
+            const recWins = get_mapping_windows_generic(nRef, nGen);
+            idealBands.recall = computeIdealNarrativeLineBandJS(recWins, nRef, nGen);
+            const recPathInfo = computeActualLineLengthJS(actualPathPositions.recall, nGen, nRef, currentLct, idealBands.recall.floor_path_dy_map);
+            const recNas = calculateLineNAS(idealBands.recall.shortest_line, idealBands.recall.longest_line, recPathInfo.totalLength);
+            actualPathSegments.recall = recPathInfo.segments;
+            
+            const f1 = _calculate_f1(precNas, recNas);
+            
+            renderSegmentLists();
+            
+            requestAnimationFrame(() => {
+                renderChart('precision', { mappingWindows: precWins, idealBand: idealBands.precision, segments: actualPathSegments.precision });
+                renderChart('recall', { mappingWindows: recWins, idealBand: idealBands.recall, segments: actualPathSegments.recall });
+            });
+            
+            ['precision', 'recall'].forEach(type => {
+                const chart = charts[type];
+                const band = type === 'precision' ? idealBands.precision : idealBands.recall;
+                const pathInfo = type === 'precision' ? precPathInfo : recPathInfo;
+                const nas = type === 'precision' ? precNas : recNas;
+                animateNumber(chart.floorLength, parseFloat(chart.floorLength.textContent)||0, band.shortest_line, 500);
+                animateNumber(chart.ceilLength, parseFloat(chart.ceilLength.textContent)||0, band.longest_line, 500);
+                animateNumber(chart.actualLength, parseFloat(chart.actualLength.textContent)||0, pathInfo.totalLength, 500);
+                animateNumber(chart.nasScore, parseFloat(chart.nasScore.textContent)||0, nas, 500);
+            });
+            
+            animateNumber(document.getElementById('overallPrecisionNas'), parseFloat(document.getElementById('overallPrecisionNas').textContent)||0, precNas, 500);
+            animateNumber(document.getElementById('overallRecallNas'), parseFloat(document.getElementById('overallRecallNas').textContent)||0, recNas, 500);
+            animateNumber(document.getElementById('f1LineNasValue'), parseFloat(document.getElementById('f1LineNasValue').textContent)||0, f1, 500);
+            
+            updateDynamicBackground(f1);
+        }
+        
+        // --- EVENT BINDING & INITIALIZATION ---
+        window.addEventListener('load', () => {
+            activeReferenceIndices = Array.from({ length: masterReferenceChunks.length }, (_, i) => i);
+            activeGeneratedIndices = Array.from({ length: masterGeneratedChunks.length }, (_, i) => i);
+            
+            document.getElementById('start-tour-btn').addEventListener('click', () => tourManager.start());
+            
+            document.getElementById('resetGenOrderBtn').addEventListener('click', () => resetSegmentOrder('generated'));
+            document.getElementById('resetRefOrderBtn').addEventListener('click', () => resetSegmentOrder('reference'));
+            lctSlider.addEventListener('input', updateAndRenderAll);
+            [generatedSegmentsUl, referenceSegmentsUl].forEach(ul => {  
+                ul.addEventListener('dragstart', handleSegmentDragStart);  
+                ul.addEventListener('dragover', handleSegmentDragOver);
+                ul.addEventListener('drop', handleSegmentDrop);
+                ul.addEventListener('dragend', handleSegmentDragEnd);
+            });
+            
+            // Marker dragging events
+            document.addEventListener('mousedown', handlePointMarkerMouseDown);
+            document.addEventListener('mousemove', handlePointMarkerMouseMove);
+            document.addEventListener('mouseup', handlePointMarkerMouseUp);
+
+            // Tooltip events
+            ['precisionMarkerContainer', 'recallMarkerContainer'].forEach(id => {
+                document.getElementById(id).addEventListener('mouseover', e => {
+                    if (e.target.classList.contains('path-point-marker')) {
+                        updateChartTooltip(e, e.target.dataset.chartType, parseInt(e.target.dataset.id));
+                    }
+                });
+                document.getElementById(id).addEventListener('mouseout', e => {
+                    if (e.target.classList.contains('path-point-marker') && !isMarkerDragging) {
+                        hideChartTooltip();
+                    }
+                });
+            });
+
+            let resizeTimer;
+            window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(updateAndRenderAll, 150); });
+            
+            initializeAppState();
+            updateAndRenderAll();
+        });
+        
+        // --- Scenario Tips & Click Handler ---
+        const scenarioTips = {
+            optimal: '<strong>Tip:</strong> The path is perfectly linear. Try dragging points vertically or horizontally to see how the score changes.',
+            neighborSwap: '<strong>Tip:</strong> Global order is maintained, but local flow is disrupted. Notice the score drop from these small swaps.',
+            reverse: '<strong>Tip:</strong> The path is completely reversed. Test how the score changes with and without LCT enabled.',
+            minorDisorders: '<strong>Tip:</strong> Even a few out-of-place segments can significantly impact the narrative flow score.',
+            majorDisorder: '<strong>Tip:</strong> With major chaos, the path is too long and discontinuous, resulting in a score of 0.',
+            rotateHalf: '<strong>Tip:</strong> Local chronology is mostly preserved, but global order is wrong. Since NAS-L prioritizes local flow, the score barely drops.'
+        };
+
+        function handleScenarioClick(scenarioType) { 
+            document.getElementById('scenarioTip').innerHTML = scenarioTips[scenarioType];
+            let targetGenOrder = [...activeGeneratedIndices].sort((a,b) => a-b); 
+            const n = targetGenOrder.length; 
+            switch(scenarioType) { 
+                case 'optimal': break; 
+                case 'neighborSwap': for(let i=0; i < n - 1; i+=2) { [targetGenOrder[i], targetGenOrder[i+1]] = [targetGenOrder[i+1], targetGenOrder[i]]; } break; 
+                case 'reverse': targetGenOrder.reverse(); break; 
+                case 'minorDisorders': targetGenOrder.forEach((_, i) => { if (Math.random() > 0.6) { const swapWith = (i + (Math.random() > 0.5 ? 1 : -1) + n) % n; [targetGenOrder[i], targetGenOrder[swapWith]] = [targetGenOrder[swapWith], targetGenOrder[i]]; } }); break; 
+                case 'majorDisorder': const reorderPattern = [2, 5, 1, 7, 0, 4, 8, 3, 6]; targetGenOrder = reorderPattern.slice(0, n); break; 
+                case 'rotateHalf': const mid = Math.floor(n/2); targetGenOrder = [...targetGenOrder.slice(mid), ...targetGenOrder.slice(0, mid)]; break; 
+            } 
+            animatePathTransition(targetGenOrder); 
+        }
+        
+        function animatePathTransition(targetGenOrder) { 
+            if (animationFrameId) cancelAnimationFrame(animationFrameId); 
+            const duration = 600; // Longer duration for smoother feel
+            
+            const startPositions = { 
+                precision: JSON.parse(JSON.stringify(actualPathPositions.precision)),
+                recall: JSON.parse(JSON.stringify(actualPathPositions.recall))
+            };
+            const genIndexToNewPosMap = new Map(targetGenOrder.map((originalIndex, newPos) => [originalIndex, newPos]));
+            
+            // Create target positions, ensuring all points have a destination
+            const targetPositions = { precision: [], recall: [] };
+            startPositions.precision.forEach(startPoint => {
+                const originalGenIndex = activeGeneratedIndices[startPoint.x];
+                const newX = genIndexToNewPosMap.get(originalGenIndex);
+                if (newX !== undefined) {
+                    targetPositions.precision[newX] = { x: newX, y: startPoint.y };
+                }
+            });
+            startPositions.recall.forEach(startPoint => {
+                const newYforGen = genIndexToNewPosMap.get(activeGeneratedIndices[startPoint.y]);
+                if (newYforGen !== undefined) {
+                    targetPositions.recall[startPoint.x] = { x: startPoint.x, y: newYforGen };
+                }
+            });
+
+            const startTime = performance.now();
+            
+            function tick(currentTime) {
+                const elapsedTime = currentTime - startTime;
+                const rawProgress = Math.min(elapsedTime / duration, 1);
+                const progress = easeOutCubic(rawProgress); // Apply easing
+
+                ['precision', 'recall'].forEach(chartType => {
+                    for(let i=0; i < startPositions[chartType].length; i++) {
+                        const start = startPositions[chartType][i];
+                        const target = targetPositions[chartType][i];
+                        if (start && target) {
+                           // Interpolate both x and y for a smoother visual transition
+                           actualPathPositions[chartType][i].x = start.x + (target.x - start.x) * progress;
+                           actualPathPositions[chartType][i].y = start.y + (target.y - start.y) * progress;
+                        }
+                    }
+                });
+                
+                requestAnimationFrame(() => {
+                    renderChart('precision', { segments: [] }, true);
+                    renderChart('recall', { segments: [] }, true);
+                });
+
+                if (rawProgress < 1) {
+                    animationFrameId = requestAnimationFrame(tick);
+                } else {
+                    animationFrameId = null;
+                    activeGeneratedIndices = targetGenOrder;
+                    initializeAppState();
+                    updateAndRenderAll();
+                }
+            }
+            animationFrameId = requestAnimationFrame(tick);
+        }
+        
+        function updateLctDescription() { lctDescription.innerHTML = ["<strong>Strict:</strong> Only monotonic steps contribute length.", "<strong>Slight Tolerance:</strong> Recalculates small non-monotonic jumps.", "<strong>Balanced Tolerance:</strong> Accommodates moderate jumps.", "<strong>Generous Tolerance:</strong> Forgiving of significant jumps.", "<strong>Very Generous:</strong> Allows large reordering without penalty.", "<strong>Max Tolerance:</strong> Most jumps are treated as monotonic."][parseInt(lctSlider.value)]; }
+        function updateChartTooltip(e, type, id) {
+            const highlightedItems = document.querySelectorAll('.segment-list li.highlight');
+            highlightedItems.forEach(item => item.classList.remove('highlight'));
+            
+            chartTooltip.classList.add('visible');
+            chartTooltip.style.left = `${e.clientX + 15}px`;
+            chartTooltip.style.top = `${e.clientY + 15}px`;
+            
+            const point = actualPathPositions[type].find(p => p.x === id);
+            if (!point) return;
+            
+            const isRecall = type === 'recall';
+            
+            const refOriginalIndex = isRecall ? activeReferenceIndices[point.x] : activeReferenceIndices[point.y];
+            const genOriginalIndex = isRecall ? activeGeneratedIndices[point.y] : activeGeneratedIndices[point.x];
+
+            const refLi = document.querySelector(`#referenceSegmentsUl li[data-original-index='${refOriginalIndex}']`);
+            const genLi = document.querySelector(`#generatedSegmentsUl li[data-original-index='${genOriginalIndex}']`);
+            if (refLi) refLi.classList.add('highlight');
+            if (genLi) genLi.classList.add('highlight');
+
+            const xOriginalIndex = (isRecall ? activeReferenceIndices : activeGeneratedIndices)[point.x];
+            const yOriginalIndex = (isRecall ? activeGeneratedIndices : activeReferenceIndices)[point.y];
+            const mappingText = `${isRecall ? 'Ref' : 'Gen'} Chunk ${xOriginalIndex} ↔ ${isRecall ? 'Gen' : 'Ref'} Chunk ${yOriginalIndex}`;
+            
+            const segments = actualPathSegments[type] || [];
+            const segment = segments.find(s => s.start.x === id);
+            let segmentText = '';
+            let statusClass = '';
+            if (segment) {
+                let statusText = 'Invalid'; statusClass = 'invalid';
+                if (segment.calculation_method === 'standard') { statusText = 'Standard'; statusClass = 'standard'; }
+                else if (segment.calculation_method === 'lct-capped') { statusText = 'LCT-Capped'; statusClass = 'lct-capped'; }
+                segmentText = `<hr class="my-1 border-slate-500"><strong class="capitalize">${statusText} Segment</strong><br>Length: ${segment.length.toFixed(3)}`;
+            }
+            chartTooltip.className = `visible ${statusClass}`;
+            chartTooltip.innerHTML = mappingText + segmentText;
+        }
+        function hideChartTooltip() {
+            chartTooltip.classList.remove('visible');
+            const highlightedItems = document.querySelectorAll('.segment-list li.highlight');
+            highlightedItems.forEach(item => item.classList.remove('highlight'));
+        }
+        buildCurrentSimilarityMatrix = function(forRecall = false) { const numActiveRef = activeReferenceIndices.length, numActiveGen = activeGeneratedIndices.length; if (numActiveRef === 0 || numActiveGen === 0) return []; let matrix = []; if (forRecall) { for (let i = 0; i < numActiveGen; i++) { const g_idx = activeGeneratedIndices[i], newRow = []; for (let j = 0; j < numActiveRef; j++) { newRow.push(masterSimilarityValues[activeReferenceIndices[j]][g_idx]); } matrix.push(newRow); } } else { for (let i = 0; i < numActiveRef; i++) { const r_idx = activeReferenceIndices[i], newRow = []; for (let j = 0; j < numActiveGen; j++) { newRow.push(masterSimilarityValues[r_idx][activeGeneratedIndices[j]]); } matrix.push(newRow); } } return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex])); };
+        get_mapping_windows_generic = function(lenX, lenY) { if (lenX === 0 || lenY === 0) return []; const isYLonger = lenY >= lenX, longerLen = isYLonger ? lenY : lenX, shorterLen = isYLonger ? lenX : lenY; const slope = longerLen / shorterLen, mappingWindowSize = Math.ceil(slope); let direct_windows = []; for (let i = 0; i < shorterLen; i++) { const idx_point = i * slope, start = Math.floor(idx_point), end = Math.min(start + mappingWindowSize, longerLen); direct_windows.push({ start, end }); } if (isYLonger) return direct_windows; let windows_for_X_items = Array(lenX).fill(null); for (let x_idx = 0; x_idx < lenX; x_idx++) { let mappedYIndices = []; direct_windows.forEach((y_window, y_idx) => { if (x_idx >= y_window.start && x_idx < y_window.end) mappedYIndices.push(y_idx); }); if (mappedYIndices.length > 0) { windows_for_X_items[x_idx] = { start: Math.min(...mappedYIndices), end: Math.max(...mappedYIndices) + 1 }; } else { const p = Math.max(0, Math.min(lenY - 1, Math.floor((x_idx / lenX) * lenY))); windows_for_X_items[x_idx] = { start: p, end: Math.min(p + 1, lenY) }; } } return windows_for_X_items.map(w => w ? ({start: w.start, end: Math.max(w.start + 1, w.end)}) : null); };
+        findBestMatchWithContextJS = function(simArr, mapWin, cut, ctrl) { let maxVal = -Infinity, maxIdx = -1; if (!simArr || simArr.length === 0) return { bestMatchIndex: -1 }; simArr.forEach((val, idx) => { if (val > maxVal) { maxVal = val; maxIdx = idx; } }); if (maxIdx === -1) return { bestMatchIndex: -1 }; const ctxRng = 1 - cut, ctxApp = maxVal > 0 && (ctxRng - (1 - maxVal)) > 0, ctxDrop = (ctxApp && maxVal !== 0) ? ((ctxRng - (1 - maxVal)) / maxVal) / ctrl : 0.0, ctxThresh = maxVal - ctxDrop; const cands = [], candVals = []; simArr.forEach((val, idx) => { if (val >= ctxThresh) { cands.push(idx); candVals.push(val); } }); if (cands.length <= 1 || !mapWin) return { bestMatchIndex: cands.length === 1 ? cands[0] : maxIdx }; const { start, end } = mapWin; let minD = Infinity, bestIdx = maxIdx, highSim = -Infinity; cands.forEach((cIdx, i) => { const dist = cIdx >= start && cIdx < end ? 0 : Math.min(Math.abs(cIdx - start), Math.abs(cIdx - (end - 1))); if (dist < minD) { minD = dist; bestIdx = cIdx; highSim = candVals[i]; } else if (dist === minD && candVals[i] > highSim) { highSim = candVals[i]; bestIdx = cIdx; } }); return { bestMatchIndex: bestIdx }; };
+        computeIdealNarrativeLineBandJS = function(mapWins, nX, nY) { const n_win = mapWins.length; if (n_win === 0 || nX === 0 || nY === 0) return { shortest_line: 0, longest_line: 0, floor_path: [], ceil_path: [], floor_path_dy_map: {} }; let dp_min = [], dp_max = [], pred_min = [], pred_max = []; for(let i=0; i<n_win; ++i) { if(!mapWins[i]) { dp_min.push([]); dp_max.push([]); pred_min.push([]); pred_max.push([]); continue; } const h = mapWins[i].end - mapWins[i].start; dp_min.push(Array(h).fill(Infinity)); dp_max.push(Array(h).fill(-Infinity)); pred_min.push(Array(h).fill(-1)); pred_max.push(Array(h).fill(-1)); } if(dp_min[0] && dp_min[0].length > 0) { for(let y=0; y<dp_min[0].length; ++y) { dp_min[0][y] = 0; dp_max[0][y] = 0; } } for(let i=1; i<n_win; ++i) { if(!mapWins[i] || !mapWins[i-1]) continue; const {start: c_s, end: c_e} = mapWins[i], {start: p_s, end: p_e} = mapWins[i-1]; for(let y_c=0; y_c<c_e-c_s; ++y_c) { for(let y_p=0; y_p<p_e-p_s; ++y_p) { const dist = Math.sqrt(1 + (c_s+y_c - (p_s+y_p))**2); if(dp_min[i-1][y_p] !== Infinity && dp_min[i-1][y_p] + dist < dp_min[i][y_c]) { dp_min[i][y_c] = dp_min[i-1][y_p] + dist; pred_min[i][y_c] = y_p; } if(dp_max[i-1][y_p] !== -Infinity && dp_max[i-1][y_p] + dist > dp_max[i][y_c]) { dp_max[i][y_c] = dp_max[i-1][y_p] + dist; pred_max[i][y_c] = y_p; } } } } let s_line = dp_min[n_win-1] && dp_min[n_win-1].length>0 ? Math.min(...dp_min[n_win-1]) : 0; let l_line = dp_max[n_win-1] && dp_max[n_win-1].length>0 ? Math.max(...dp_max[n_win-1]) : 0; let s_end_y = dp_min[n_win-1] && dp_min[n_win-1].length>0 ? dp_min[n_win-1].indexOf(s_line) : -1; let l_end_y = dp_max[n_win-1] && dp_max[n_win-1].length>0 ? dp_max[n_win-1].indexOf(l_line) : -1; if(s_line === Infinity || s_end_y === -1) s_line = 0; if(l_line === -Infinity || l_end_y === -1) l_line = 0; let f_path = [], c_path = [], c_y_min = s_end_y, c_y_max = l_end_y; for(let i = n_win-1; i>=0; --i) { if(!mapWins[i]) continue; if(c_y_min !== -1 && pred_min[i] && pred_min[i][c_y_min] !== undefined) { f_path.unshift({x: i, y: mapWins[i].start + c_y_min}); c_y_min = pred_min[i][c_y_min]; } if(c_y_max !== -1 && pred_max[i] && pred_max[i][c_y_max] !== undefined) { c_path.unshift({x: i, y: mapWins[i].start + c_y_max}); c_y_max = pred_max[i][c_y_max]; } } const dyMap = {}; if(f_path.length > 1) { for(let i=0; i<f_path.length-1; ++i) dyMap[i] = f_path[i+1].y - f_path[i].y; } return { shortest_line: s_line, longest_line: l_line, floor_path: f_path, ceil_path: c_path, floor_path_dy_map: dyMap }; };
+        animateNumber = function(el, start, end, duration = 400) { if (Math.abs(end - start) < 0.001) { el.textContent = end.toFixed(el.id.includes("NasScore") || el.id.includes("Nas") || el.id.includes("f1") ? 3 : 2); return; } const frame = (ct) => { const elapsed = ct - st; const rawProgress = Math.min(elapsed / duration, 1); const progress = easeOutCubic(rawProgress); const current = start + (end - start) * progress; el.textContent = current.toFixed(el.id.includes("NasScore") || el.id.includes("Nas") || el.id.includes("f1") ? 3 : 2); if (rawProgress < 1) requestAnimationFrame(frame); }; const st = performance.now(); requestAnimationFrame(frame); };
+        renderSegmentLists = function() { function populateList(ul, chunks, indices, type) { ul.innerHTML = ''; const activeSet = new Set(indices); const items = chunks.map((text, index) => { const li = document.createElement('li'); const isActive = activeSet.has(index); li.dataset.originalIndex = index; li.dataset.chunkType = type; const textSpan = document.createElement('span'); textSpan.textContent = `${type.slice(0,3).toUpperCase()} ${index}: ${text.substring(0,50)}${text.length > 50 ? '...' : ''}`; li.appendChild(textSpan); if (isActive) { li.setAttribute('draggable', true); const handle = document.createElement('i'); handle.className = 'fas fa-grip-vertical text-slate-400'; li.appendChild(handle); } li.classList.toggle('inactive-chunk', !isActive); li.onclick = () => toggleChunkActiveState(type, index); return { li, isActive, originalIndex: index }; }); indices.forEach(idx => ul.appendChild(items.find(it => it.originalIndex === idx).li)); items.forEach(it => { if (!it.isActive) ul.appendChild(it.li); }); } document.getElementById('activeRefChunkCount').textContent = activeReferenceIndices.length; document.getElementById('totalRefChunkCount').textContent = masterReferenceChunks.length; document.getElementById('activeGenChunkCount').textContent = activeGeneratedIndices.length; document.getElementById('totalGenChunkCount').textContent = masterGeneratedChunks.length; populateList(referenceSegmentsUl, masterReferenceChunks, activeReferenceIndices, 'reference'); populateList(generatedSegmentsUl, masterGeneratedChunks, activeGeneratedIndices, 'generated'); };
+        handleSegmentDragStart = function(e) { if (!e.target.getAttribute('draggable')) return; draggedItemInfo.element = e.target; draggedItemInfo.originalIndex = parseInt(e.target.dataset.originalIndex); draggedItemInfo.type = e.target.dataset.chunkType; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', draggedItemInfo.originalIndex); setTimeout(() => e.target.classList.add('dragging'), 0); };
+        handleSegmentDragOver = function(e) { e.preventDefault(); const ul = e.target.closest('ul'); if (!ul || (ul.id !== `${draggedItemInfo.type}SegmentsUl`)) return; if (!draggedItemInfo.placeholder) { draggedItemInfo.placeholder = document.createElement('li'); draggedItemInfo.placeholder.className = 'drag-placeholder'; draggedItemInfo.placeholder.textContent = 'Drop here'; } const li = e.target.closest('li:not(.inactive-chunk):not(.dragging)'); if (li && li.dataset.chunkType === draggedItemInfo.type) { const r = li.getBoundingClientRect(); ul.insertBefore(draggedItemInfo.placeholder, e.clientY > r.top + r.height / 2 ? li.nextSibling : li); } else if (!ul.querySelector('.drag-placeholder')) { const first = ul.querySelector('li[draggable="true"]'); if (first) ul.insertBefore(draggedItemInfo.placeholder, first); } };
+        handleSegmentDrop = function(e) { e.preventDefault(); if (!draggedItemInfo.placeholder || !draggedItemInfo.placeholder.parentNode) return; const arr = draggedItemInfo.type === 'reference' ? activeReferenceIndices : activeGeneratedIndices; const from = arr.indexOf(draggedItemInfo.originalIndex); if(from > -1) arr.splice(from, 1); const items = Array.from(draggedItemInfo.placeholder.parentNode.children); const to = items.filter(li => li.getAttribute('draggable') === 'true' || li.classList.contains('drag-placeholder')).indexOf(draggedItemInfo.placeholder); arr.splice(to, 0, draggedItemInfo.originalIndex); draggedItemInfo.placeholder.remove(); initializeAppState(); updateAndRenderAll(); };
+        handleSegmentDragEnd = function() { if (draggedItemInfo.element) draggedItemInfo.element.classList.remove('dragging'); if (draggedItemInfo.placeholder && draggedItemInfo.placeholder.parentNode) draggedItemInfo.placeholder.remove(); draggedItemInfo = { element: null, originalIndex: null, type: null, placeholder: null }; };
+        
+        // --- Marker Drag Logic (Refined for smoothness) ---
+        function handlePointMarkerMouseDown(e) { 
+            if (!e.target.classList.contains('path-point-marker')) return;
+            e.preventDefault();
+            isMarkerDragging = true;
+            hideScorePreview();
+            const marker = e.target;
+            draggedMarkerInfo = { chartType: marker.dataset.chartType, id: parseInt(marker.dataset.id), element: marker, chartGrid: charts[marker.dataset.chartType].grid, startY: e.clientY, startX: e.clientX, mode: null, targetX: null };
+            marker.classList.add('dragging');
+            document.body.style.userSelect = 'none'; // Prevent text selection during drag
+        }
+        
+        function handlePointMarkerMouseMove(e) {
+            if (!isMarkerDragging || !draggedMarkerInfo.chartGrid) return;
+            
+            // Throttle with requestAnimationFrame
+            requestAnimationFrame(() => {
+                if (!isMarkerDragging) return; // Check again inside the frame
+                const { chartType, id, chartGrid, startX, startY } = draggedMarkerInfo;
+                if (!draggedMarkerInfo.mode) {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                        draggedMarkerInfo.mode = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical';
+                        document.body.style.cursor = draggedMarkerInfo.mode === 'horizontal' ? 'ew-resize' : 'ns-resize';
+                    }
+                }
+
+                const tempPaths = JSON.parse(JSON.stringify(actualPathPositions));
+                let hasChanged = false;
+
+                if (draggedMarkerInfo.mode === 'vertical') {
+                    const isR = chartType === 'recall';
+                    const nY = isR ? activeGeneratedIndices.length : activeReferenceIndices.length;
+                    const r = chartGrid.getBoundingClientRect();
+                    let newY = Math.floor((1 - ((e.clientY - r.top) / r.height)) * nY);
+                    newY = Math.max(0, Math.min(nY - 1, newY));
+                    const marker = tempPaths[chartType].find(m => m.x === id);
+                    if (marker && marker.y !== newY) {
+                        marker.y = newY;
+                        hasChanged = true;
+                    }
+                } else if (draggedMarkerInfo.mode === 'horizontal') {
+                    const isR = chartType === 'recall';
+                    const nX = isR ? activeReferenceIndices.length : activeGeneratedIndices.length;
+                    const r = chartGrid.getBoundingClientRect();
+                    let hoverX = Math.floor(((e.clientX - r.left) / r.width) * nX);
+                    hoverX = Math.max(0, Math.min(nX - 1, hoverX));
+                    
+                    if (hoverX !== id) {
+                         draggedMarkerInfo.targetX = hoverX;
+                         const sourcePoint = tempPaths[chartType].find(p => p.x === id);
+                         const targetPoint = tempPaths[chartType].find(p => p.x === hoverX);
+                         if(sourcePoint && targetPoint) {
+                            [sourcePoint.y, targetPoint.y] = [targetPoint.y, sourcePoint.y];
+                            hasChanged = true;
+                         }
+                    } else {
+                        draggedMarkerInfo.targetX = null;
+                    }
+                }
+
+                if (hasChanged) {
+                    showScorePreview(tempPaths);
+                }
+            });
+        }
+        
+        function handlePointMarkerMouseUp(e) {
+            if (!isMarkerDragging) return;
+            hideScorePreview();
+
+            if (draggedMarkerInfo.mode === 'horizontal' && draggedMarkerInfo.targetX !== null) {
+                const { chartType, id, targetX } = draggedMarkerInfo;
+                const path = actualPathPositions[chartType];
+                const sourcePoint = path.find(p => p.x === id);
+                const targetPoint = path.find(p => p.x === targetX);
+                if (sourcePoint && targetPoint) {
+                    [sourcePoint.y, targetPoint.y] = [targetPoint.y, sourcePoint.y];
+                }
+            } else if (draggedMarkerInfo.mode === 'vertical') {
+                const { chartType, id, chartGrid } = draggedMarkerInfo;
+                const isR = chartType === 'recall';
+                const nY = isR ? activeGeneratedIndices.length : activeReferenceIndices.length;
+                const r = chartGrid.getBoundingClientRect();
+                let newY = Math.floor((1 - ((e.clientY - r.top) / r.height)) * nY);
+                newY = Math.max(0, Math.min(nY - 1, newY));
+                const marker = actualPathPositions[chartType].find(m => m.x === id);
+                if (marker) {
+                    marker.y = newY;
+                }
+            }
+            
+            if (draggedMarkerInfo.element) draggedMarkerInfo.element.classList.remove('dragging');
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = '';
+            hideChartTooltip();
+            
+            isMarkerDragging = false;
+            draggedMarkerInfo = { chartType: null, id: null, element: null, chartGrid: null, startY: 0, startX: 0, mode: null, targetX: null };
+            updateAndRenderAll();
+        }
+        
+        toggleChunkActiveState = function(type, index) { let arr = (type === 'reference') ? activeReferenceIndices : activeGeneratedIndices; const pos = arr.indexOf(index); if (pos > -1) { if (arr.length > 1) arr.splice(pos, 1); else return; } else { arr.push(index); } activeReferenceIndices.sort((a,b)=>a-b); activeGeneratedIndices.sort((a,b)=>a-b); initializeAppState(); updateAndRenderAll(); };
+        
+        // **MODIFIED FUNCTION**
+        // This function now reactivates all chunks in addition to resetting their order.
+        resetSegmentOrder = function(type) {
+            if (type === 'generated') {
+                // 1. Reactivate all generated chunks by resetting the array to its initial full state of indices.
+                activeGeneratedIndices = Array.from({ length: masterGeneratedChunks.length }, (_, i) => i);
+                // 2. Then, call the 'optimal' scenario handler, which will sort this now-full list and animate the transition.
+                handleScenarioClick('optimal');
+            } else { // 'reference'
+                // 1. Reactivate all reference chunks by resetting the array to its initial full state of indices.
+                activeReferenceIndices = Array.from({ length: masterReferenceChunks.length }, (_, i) => i);
+                // 2. Re-initialize all paths and re-render the charts and lists to reflect the change.
+                initializeAppState();
+                updateAndRenderAll();
+            }
+        };
+
+        initializeAppState = function() { if (animationFrameId) cancelAnimationFrame(animationFrameId); ['precision', 'recall'].forEach(type => { const isR = type === 'recall', nX = isR ? activeReferenceIndices.length : activeGeneratedIndices.length, nY = isR ? activeGeneratedIndices.length : activeReferenceIndices.length; const wins = get_mapping_windows_generic(nX, nY); actualPathPositions[type] = []; if (nX === 0 || nY === 0) return; const sim = buildCurrentSimilarityMatrix(isR); for (let x=0; x<nX; x++) { const colSim = sim[x], win = wins[x], match = findBestMatchWithContextJS(colSim, win, 0.6, 4.0); let y = match.bestMatchIndex; if(y===-1) y = win ? Math.floor((win.start + win.end)/2) : Math.floor(nY/2); actualPathPositions[type].push({x,y});} }); };
+
+    </script>
+</body>
+</html>

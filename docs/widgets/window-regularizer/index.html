@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Window Regularizer Interactive Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- KaTeX for rendering mathematical formulas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0KOVEMGmJoZBTT7SgX1PzxIe1LCan4QM5KIrvDAotTtJeNldvXotY" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" xintegrity="sha384-+VBxd3r6XgURPiLgZso9PbyEXdLs2STvxKI3o7qaUGeZQ1eAiOLoFRG8ldMZXz2x" crossorigin="anonymous"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* --- Base & Animation Styles --- */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 1.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        
+        :root {
+            --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --ease-out-cubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+        }
+
+        /* --- Glassmorphism & Card Styles (Matched with NAS-D) --- */
+        .interactive-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.35s var(--ease-out-cubic), 
+                        box-shadow 0.35s var(--ease-out-cubic), 
+                        border-color 0.35s var(--ease-out-cubic);
+            will-change: transform, box-shadow;
+        }
+        .interactive-card:hover {
+            box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 15px -8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .demo-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 250, 252, 0.5) 100%); border-color: rgba(226, 232, 240, 0.7); }
+        .intro-card { background: linear-gradient(135deg, rgba(254, 252, 232, 0.6) 0%, rgba(254, 243, 199, 0.5) 100%); border-color: rgba(251, 191, 36, 0.5); }
+        .metrics-card { background: linear-gradient(135deg, rgba(240, 249, 255, 0.6) 0%, rgba(219, 234, 254, 0.5) 100%); border-color: rgba(147, 197, 253, 0.6); }
+        .formula-card { background: linear-gradient(135deg, rgba(245, 243, 255, 0.6) 0%, rgba(237, 233, 254, 0.5) 100%); border-color: rgba(196, 181, 253, 0.6); }
+
+        /* --- UI Component Styles --- */
+        .axis-label { position: absolute; font-size: 0.75rem; color: #475569; font-weight: 500; white-space: nowrap; z-index: 25; }
+        .ideal-mapping-window { position: absolute; border: 2px solid #0d9488; background-color: rgba(20, 184, 166, 0.2); box-sizing: border-box; z-index: 1; transition: all 0.2s ease-out; pointer-events: none; border-radius: 0.25rem; }
+        .chart-grid-background { background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px); }
+        
+        .bar-item { margin-bottom: 12px; }
+        .bar-item:last-child { margin-bottom: 0; }
+        .bar-label-value { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.875rem; }
+        .bar-label-value .label { color: #475569; font-weight: 500; }
+        .bar-label-value .value-text { color: #1e293b; font-weight: 600; background-color: rgba(241, 245, 249, 0.7); padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; }
+        .bar-wrapper { width: 100%; height: 20px; background-color: #e2e8f0; border-radius: 6px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+        .bar { height: 100%; border-radius: 6px; transition: width 0.4s ease-out; text-align: right; color: white; font-size: 0.75rem; line-height: 20px; font-weight: 500; }
+
+        #timelineAreaBar { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+        #totalMappingWindowAreaBar { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+        #minAreaBar { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+        #windowRegularizerBar { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); }
+        #originalNasBar { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+        #regularizedNasBar { background: linear-gradient(135deg, #059669 0%, #10b981 100%); font-weight: 600; }
+
+        .preset-btn { transition: all 0.2s var(--ease-out-quad); background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); }
+        .preset-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+
+        /* --- Styles for Algorithm Details --- */
+        .math-formula { background: rgba(248, 250, 252, 0.8); border: 1px solid #e2e8f0; font-family: 'Inter', sans-serif; font-size: 1rem; }
+        .step-number { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.875rem; flex-shrink: 0; }
+        details summary { cursor: pointer; user-select: none; transition: color 0.2s var(--ease-out-quad); }
+        details summary:hover { color: #1d4ed8; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary .summary-icon { display: inline-block; margin-right: 0.5rem; transition: transform 0.25s var(--ease-out-cubic); }
+        details[open] summary .summary-icon { transform: rotate(90deg); }
+
+        /* --- Tour Styles --- */
+        #tour-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9998; opacity: 0; transition: opacity 0.4s ease-in-out; pointer-events: none; }
+        .tour-highlight { position: relative; z-index: 9999; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), 0 0 20px rgba(255, 255, 255, 0.9); border-radius: 0.5rem; transition: box-shadow 0.4s ease-in-out; }
+        #tour-callout { position: absolute; background: white; color: #334155; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px; border-left: 4px solid #3b82f6; transition: opacity 0.3s var(--ease-out-cubic), transform 0.3s var(--ease-out-cubic); transform: translateY(10px); opacity: 0; }
+        #tour-callout.visible { transform: translateY(0); opacity: 1; }
+        #tour-callout button { background-color: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; transition: background-color 0.2s var(--ease-out-quad), transform 0.2s var(--ease-out-quad); }
+        #tour-callout button:hover { background-color: #2563eb; transform: translateY(-1px); }
+
+        /* --- NEW Styles for Chart Resizing and Penalty Attribution --- */
+        .resize-handle { position: absolute; background: rgba(13, 148, 136, 0.5); opacity: 0; transition: opacity 0.3s ease; z-index: 30; }
+        .resize-handle:hover { opacity: 1; }
+        #resizeHandleX { top: 0; right: -5px; width: 10px; height: 100%; cursor: ew-resize; }
+        #resizeHandleY { top: -5px; left: 0; width: 100%; height: 10px; cursor: ns-resize; }
+        
+        .penalty-highlight-active .ideal-mapping-window {
+            background-color: rgba(239, 68, 68, 0.4);
+            border-color: #ef4444;
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased">
+    <div id="app-background" class="fixed inset-0 z-[-1] transition-all duration-1000"></div>
+    <div id="tour-overlay"></div>
+
+    <main class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <div class="text-center mb-8 relative">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mr-2">Regularization</div>
+                <div class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">Window Coverage Assessment</div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-800 bg-clip-text text-transparent">Window Regularizer Interactive Demo</h1>
+            <p class="mt-3 text-lg text-slate-600 max-w-4xl mx-auto">Explore how the Window Regularizer penalizes excessive mapping window coverage to ensure a balanced narrative assessment.</p>
+            <button id="start-tour-btn" class="absolute top-0 right-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105">
+                <i class="fas fa-magic mr-2"></i>Start Tour
+            </button>
+        </div>
+
+        <div class="mb-8">
+            <div id="tour-step-1" class="intro-card interactive-card rounded-xl p-6">
+                <div class="flex items-center mb-4"><i class="fas fa-balance-scale text-amber-600 text-xl mr-3"></i><h2 class="text-xl font-semibold text-amber-800">Purpose of the Window Regularizer</h2></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-question-circle text-amber-500 mr-2"></i>What it is</h3><p class="text-sm text-slate-700">A penalty function that moderates the original NAS score by considering the size of the mapping windows relative to the total possible area.</p></div>
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>The Problem</h3><p class="text-sm text-slate-700">When one sequence is much shorter than the other, the mapping windows become very large, making the assessment overly permissive and yielding artificially high scores.</p></div>
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-cogs text-amber-500 mr-2"></i>The Solution</h3><p class="text-sm text-slate-700">The regularizer measures the ratio of window coverage to timeline area. If the coverage is excessive, it applies a penalty, ensuring a fair and stringent assessment.</p></div>
+                </div>
+                
+                <details id="tour-step-algo" class="mt-6">
+                    <summary class="font-semibold text-amber-700 mb-3 flex items-center"><i class="fas fa-chevron-right summary-icon"></i>Algorithm Details & Mathematics</summary>
+                    <div class="mt-4 space-y-6 ml-6 border-l-2 border-slate-200 pl-6">
+                        <!-- Step 1 -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4">1</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Calculate Areas</h4>
+                                <p class="text-sm text-slate-600 mb-2">First, we measure two key areas: the total area of the grid (Timeline Area) and the area covered by the green mapping windows (Window Area).</p>
+                                <div class="math-formula p-4 rounded-lg text-sm space-y-4">
+                                    <div>
+                                        <h5 class="font-semibold text-slate-700 mb-1">Total Window Area ($A_w$)</h5>
+                                        <p class="text-slate-600 text-xs mb-2">The sum of the heights of all mapping windows.</p>
+                                        $$ A_w = \sum_{i=1}^{N} (\text{end}_i - \text{start}_i) $$
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-slate-700 mb-1">Timeline Area ($A_t$)</h5>
+                                        <p class="text-slate-600 text-xs mb-2">The total area of the grid, based on sequence lengths.</p>
+                                        $$ A_t = L_{ref} \times L_{gen} $$
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4">2</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Calculate Regularizer Penalty (R)</h4>
+                                <p class="text-sm text-slate-600 mb-2">Next, we compute a penalty ($R$). This value measures how much the window coverage exceeds the ideal minimum, scaled by a normalization factor.</p>
+                                <div class="math-formula p-4 rounded-lg text-sm space-y-4">
+                                    <div>
+                                        <h5 class="font-semibold text-slate-700 mb-1">Minimum Area ($A_{min}$)</h5>
+                                        <p class="text-slate-600 text-xs mb-2">The smallest possible coverage ratio for a perfectly balanced 1-to-1 mapping.</p>
+                                        $$ A_{min} = \frac{1}{\max(L_{ref}, L_{gen})} $$
+                                    </div>
+                                    <div>
+                                        <h5 class="font-semibold text-slate-700 mb-1">Regularizer Penalty ($R$)</h5>
+                                         <p class="text-slate-600 text-xs mb-2">The final penalty, capped between 0 and 1.</p>
+                                        $$ R = \frac{(\frac{A_w}{A_t}) - A_{min}}{0.5 - A_{min}} $$
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4">3</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Apply Regularization</h4>
+                                <p class="text-sm text-slate-600 mb-2">Finally, the penalty ($R$) is subtracted from the original NAS score, and the result is re-normalized to produce the final, fairer score.</p>
+                                <div class="math-formula p-4 rounded-lg text-sm">
+                                    <h5 class="font-semibold text-slate-700 mb-1">Regularized NAS ($NAS_{reg}$)</h5>
+                                    $$ NAS_{reg} = \frac{NAS_{F1} - R}{1 - R} $$
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                <div id="tour-step-2" class="demo-card interactive-card rounded-xl p-4">
+                    <div class="text-center mb-4">
+                        <div class="inline-flex items-center bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-chart-area mr-1"></i>WINDOW COVERAGE VISUALIZATION</div>
+                        <h2 class="text-lg font-bold text-slate-800">Mapping Window Coverage Analysis</h2>
+                    </div>
+                    <div class="relative w-full max-w-2xl mx-auto pt-4 pb-20 pl-16 pr-4">
+                        <div class="absolute top-1/2 -left-12 -translate-y-1/2 -rotate-90 font-semibold text-sm text-slate-600 whitespace-nowrap">Reference Chunks</div>
+                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 font-semibold text-sm text-slate-600">Generated Chunks</div>
+                        <div id="chartContainer" class="relative w-full aspect-square">
+                            <div id="chartGrid" class="absolute inset-0 bg-white rounded-lg chart-grid-background border border-slate-200">
+                                <div id="idealMappingContainer"></div>
+                                <div id="axisLabelContainerY"></div>
+                                <div id="axisLabelContainerX"></div>
+                            </div>
+                            <!-- NEW Resize Handles -->
+                            <div id="resizeHandleX" class="resize-handle"></div>
+                            <div id="resizeHandleY" class="resize-handle"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tour-step-4" class="formula-card interactive-card rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-purple-800 mb-4 flex items-center"><i class="fas fa-chart-bar text-purple-600 mr-2"></i>Regularization Metrics Breakdown</h3>
+                    <div class="space-y-4">
+                        <div class="bar-item"><div class="bar-label-value"><span class="label">Timeline Area (TR × TG):</span><span class="value-text" id="timelineAreaValText">-</span></div><div class="bar-wrapper"><div class="bar" id="timelineAreaBar" style="width: 0%;"></div></div></div>
+                        <div class="bar-item"><div class="bar-label-value"><span class="label">Total Mapping Window Area:</span><span class="value-text" id="totalMappingWindowAreaValText">-</span></div><div class="bar-wrapper"><div class="bar" id="totalMappingWindowAreaBar" style="width: 0%;"></div></div></div>
+                        <div class="bar-item"><div class="bar-label-value"><span class="label">Min Area (1/max(TR,TG)):</span><span class="value-text" id="minAreaValText">-</span></div><div class="bar-wrapper"><div class="bar" id="minAreaBar" style="width: 0%;"></div></div></div>
+                        <div id="penalty-bar-container" class="bar-item"><div class="bar-label-value"><span class="label">Window Regularizer Penalty:</span><span class="value-text" id="windowRegularizerValText">-</span></div><div class="bar-wrapper"><div class="bar" id="windowRegularizerBar" style="width: 0%;"></div></div></div>
+                        <div class="bar-item"><div class="bar-label-value"><span class="label">Input NAS-F1:</span><span class="value-text" id="originalNasValText">-</span></div><div class="bar-wrapper"><div class="bar" id="originalNasBar" style="width: 0%;"></div></div></div>
+                        <div class="bar-item"><div class="bar-label-value"><span class="label font-bold text-lg text-teal-800">Final Regularized NAS:</span><span class="value-text font-bold text-lg" id="regularizedNasValText">-</span></div><div class="bar-wrapper"><div class="bar" id="regularizedNasBar" style="width: 0%;"></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="sticky top-6 space-y-6">
+                    <div id="tour-step-3" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-th text-teal-600 mr-2"></i>Configuration</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label for="refLenInput" class="text-sm font-medium text-slate-700">Reference Chunks (TR):</label>
+                                <input type="number" id="refLenInput" min="1" max="50" value="9" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label for="genLenInput" class="text-sm font-medium text-slate-700">Generated Chunks (TG):</label>
+                                <input type="number" id="genLenInput" min="1" max="50" value="9" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label for="nasF1Input" class="text-sm font-medium text-slate-700">Input NAS-F1 Score:</label>
+                                <input type="number" id="nasF1Input" min="0" max="1" step="0.01" value="0.85" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tour-step-5" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-magic text-teal-600 mr-2"></i>Test Scenarios</h3>
+                        <div class="space-y-3">
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(9, 9, 0.85)"><i class="fas fa-equals mr-2"></i>Balanced (9×9)</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(25, 5, 0.85)"><i class="fas fa-arrows-alt-h mr-2"></i>Wide Ratio (25×5)</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(5, 25, 0.85)"><i class="fas fa-arrows-alt-v mr-2"></i>Tall Ratio (5×25)</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(50, 20, 0.85)"><i class="fas fa-arrows-alt-h mr-2"></i>Wide Ratio (50 v 20)</button>
+                            <button class="preset-btn w-full text-white px-4 py-2 rounded-lg text-sm font-medium" onclick="setScenario(25, 10, 0.85)"><i class="fas fa-arrows-alt-h mr-2"></i>Wide Ratio (25 v 10)</button>
+                        </div>
+                    </div>
+
+                    <div id="tour-step-6" class="metrics-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center"><i class="fas fa-info-circle text-blue-600 mr-2"></i>Quick Stats</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Coverage Ratio:</span>
+                                <span id="coverageRatioText" class="font-semibold text-slate-800">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Penalty Level:</span>
+                                <span id="penaltyLevelText" class="font-semibold text-slate-800">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Score Impact:</span>
+                                <span id="scoreImpactText" class="font-semibold text-slate-800">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const chartContainer = document.getElementById('chartContainer');
+        const chartGrid = document.getElementById('chartGrid');
+        const idealMappingContainer = document.getElementById('idealMappingContainer');
+        const axisLabelContainerX = document.getElementById('axisLabelContainerX');
+        const axisLabelContainerY = document.getElementById('axisLabelContainerY');
+        const refLenInput = document.getElementById('refLenInput');
+        const genLenInput = document.getElementById('genLenInput');
+        const nasF1Input = document.getElementById('nasF1Input');
+        const appBackground = document.getElementById('app-background');
+        
+        const timelineAreaValText = document.getElementById('timelineAreaValText'), 
+              totalMappingWindowAreaValText = document.getElementById('totalMappingWindowAreaValText'), 
+              minAreaValText = document.getElementById('minAreaValText'), 
+              windowRegularizerValText = document.getElementById('windowRegularizerValText'), 
+              originalNasValText = document.getElementById('originalNasValText'), 
+              regularizedNasValText = document.getElementById('regularizedNasValText');
+              
+        const timelineAreaBar = document.getElementById('timelineAreaBar'), 
+              totalMappingWindowAreaBar = document.getElementById('totalMappingWindowAreaBar'), 
+              minAreaBar = document.getElementById('minAreaBar'), 
+              windowRegularizerBar = document.getElementById('windowRegularizerBar'), 
+              originalNasBar = document.getElementById('originalNasBar'), 
+              regularizedNasBar = document.getElementById('regularizedNasBar');
+              
+        const coverageRatioText = document.getElementById('coverageRatioText'), 
+              penaltyLevelText = document.getElementById('penaltyLevelText'), 
+              scoreImpactText = document.getElementById('scoreImpactText');
+              
+        let numUnitsY, numUnitsX, currentPrecisionWindowsForRendering;
+        
+        const MAX_CHUNKS = 50;
+        refLenInput.max = MAX_CHUNKS;
+        genLenInput.max = MAX_CHUNKS;
+
+        // --- TOUR MANAGER ---
+        const tourManager = {
+            isActive: false,
+            currentStep: 0,
+            overlay: document.getElementById('tour-overlay'),
+            steps: [
+                { selector: '#tour-step-1', text: 'Welcome! This section explains why the Window Regularizer is needed to prevent unfairly high scores in unbalanced comparisons.', position: 'bottom' },
+                { selector: '#tour-step-algo', text: 'For a deeper dive, expand this section to see the mathematical formulas and step-by-step logic behind the regularizer.', position: 'bottom' },
+                { selector: '#tour-step-2', text: 'This chart is now interactive! Drag the right and top edges to change the number of chunks and see how the windows react.', position: 'top' },
+                { selector: '#tour-step-3', text: 'These input boxes will update automatically as you drag the chart, or you can type values in directly.', position: 'left' },
+                { selector: '#tour-step-4', text: 'Hover over the red penalty bar to see a visual representation of the penalty on the chart itself.', position: 'top' },
+                { selector: '#tour-step-5', text: 'Use these presets to quickly see how the regularizer behaves. Let\'s try an "Extreme" case.', position: 'left', action: () => setScenario(2, 40, 0.85) },
+                { selector: '#tour-step-6', text: 'These stats summarize the outcome: the coverage ratio, the penalty level, and the final impact on the score. Enjoy exploring!', position: 'left' }
+            ],
+
+            start: function() { this.isActive = true; this.currentStep = 0; this.overlay.style.pointerEvents = 'auto'; this.overlay.style.opacity = '1'; this.showStep(); },
+            next: function() {
+                this.cleanupCurrentStep(); this.currentStep++;
+                if (this.currentStep < this.steps.length) {
+                    if (this.steps[this.currentStep - 1].action) { this.steps[this.currentStep - 1].action(); }
+                    setTimeout(() => this.showStep(), 400);
+                } else { this.end(); }
+            },
+            showStep: function() {
+                const step = this.steps[this.currentStep]; const targetElement = document.querySelector(step.selector); if (!targetElement) { this.end(); return; }
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                setTimeout(() => {
+                    targetElement.classList.add('tour-highlight');
+                    const callout = document.createElement('div'); callout.id = 'tour-callout'; callout.innerHTML = `<p class="text-sm mb-4">${step.text}</p><div class="flex justify-end"><button onclick="tourManager.next()">Next &rarr;</button></div>`; document.body.appendChild(callout);
+                    const targetRect = targetElement.getBoundingClientRect(); const calloutRect = callout.getBoundingClientRect(); const margin = 15;
+                    const scrollY = window.scrollY || document.documentElement.scrollTop; const scrollX = window.scrollX || document.documentElement.scrollLeft;
+                    let top, left;
+                    switch (step.position) {
+                        case 'bottom': top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'top': top = targetRect.top + scrollY - calloutRect.height - margin; left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2); break;
+                        case 'left': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.left + scrollX - calloutRect.width - margin; break;
+                        case 'right': top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2); left = targetRect.right + scrollX + margin; break;
+                        default: top = targetRect.bottom + scrollY + margin; left = targetRect.left + scrollX;
+                    }
+                    const viewportRight = scrollX + window.innerWidth; const viewportBottom = scrollY + window.innerHeight;
+                    if (left < scrollX + margin) left = scrollX + margin;
+                    if (left + calloutRect.width > viewportRight - margin) left = viewportRight - calloutRect.width - margin;
+                    if (top < scrollY + margin) top = scrollY + margin;
+                    if (top + calloutRect.height > viewportBottom - margin) top = viewportBottom - calloutRect.height - margin;
+                    callout.style.top = `${top}px`; callout.style.left = `${left}px`;
+                    requestAnimationFrame(() => { callout.classList.add('visible'); });
+                }, 350);
+            },
+            cleanupCurrentStep: function() { const oldHighlight = document.querySelector('.tour-highlight'); if (oldHighlight) oldHighlight.classList.remove('tour-highlight'); const oldCallout = document.getElementById('tour-callout'); if (oldCallout) oldCallout.remove(); },
+            end: function() { this.cleanupCurrentStep(); this.isActive = false; this.overlay.style.opacity = '0'; setTimeout(() => this.overlay.style.pointerEvents = 'none', 400); }
+        };
+
+        // --- Core Logic (Unchanged) ---
+        function get_mapping_windows_js(refLen, genLen) {
+            const isRefLonger = refLen >= genLen; const longerLen = isRefLonger ? refLen : genLen; const shorterLen = isRefLonger ? genLen : refLen;
+            if (shorterLen === 0) return { precision_windows_for_rendering: [], windows_for_regularizer_calc: [], longer_axis_len: longerLen };
+            const slope = longerLen / shorterLen; const mappingWindowHeight = Math.ceil(slope);
+            let direct_windows = Array.from({length: shorterLen}, (_, i) => { const idx_point = i * slope, start = Math.max(Math.floor(idx_point), 0), end = Math.min(start + mappingWindowHeight, longerLen); return {start, end}; });
+            let precision_windows_for_gen_chunks;
+            if (isRefLonger) {
+                precision_windows_for_gen_chunks = direct_windows.map(w => ({...w}));
+            } else {
+                precision_windows_for_gen_chunks = [];
+                for (let genIdx = 0; genIdx < genLen; genIdx++) {
+                    let mappedRefIndices = [];
+                    direct_windows.forEach((ref_window_on_gen_axis, refIdx) => { if (genIdx >= ref_window_on_gen_axis.start && genIdx < ref_window_on_gen_axis.end) { mappedRefIndices.push(refIdx); } });
+                    if (mappedRefIndices.length > 0) { precision_windows_for_gen_chunks.push({ start: Math.min(...mappedRefIndices), end: Math.max(...mappedRefIndices) + 1 });
+                    } else { const proportionalRefPos = Math.floor((genIdx / genLen) * refLen); precision_windows_for_gen_chunks.push({ start: proportionalRefPos, end: proportionalRefPos + 1}); }
+                }
+            }
+            return { precision_windows_for_rendering: precision_windows_for_gen_chunks, windows_for_regularizer_calc: direct_windows, longer_axis_len: longerLen };
+        }
+        function _calculate_window_regularizer_js(ref_len, gen_len, mapping_windows, max_len) {
+            let total_mapping_window_area = 0; for (const window of mapping_windows) { total_mapping_window_area += (window.end - window.start); }
+            const timeline_area = ref_len * gen_len; const min_area_val = max_len > 0 ? 1 / max_len : 0; let window_regularizer_val;
+            if (timeline_area > 0 && min_area_val < 0.5 && (0.5 - min_area_val) > 1e-9) {
+                window_regularizer_val = ((total_mapping_window_area / timeline_area) - min_area_val) / (0.5 - min_area_val);
+                window_regularizer_val = Math.max(0, Math.min(1, window_regularizer_val));
+            } else if (timeline_area > 0 && min_area_val >= 0.5) {
+                window_regularizer_val = (total_mapping_window_area / timeline_area <= min_area_val + 1e-9) ? 0 : 1;
+            } else { window_regularizer_val = 0; }
+            return { window_regularizer: window_regularizer_val, internals: { total_mapping_window_area, timeline_area, min_area: min_area_val } };
+        }
+        function _regularize_nas_js(nas_f1, window_regularizer) {
+            const nas_regularized = nas_f1 - window_regularizer; if (nas_regularized <= 0) return 0.0;
+            if (Math.abs(1 - window_regularizer) < 1e-9) return 0.0;
+            return nas_regularized / (1 - window_regularizer);
+        }
+
+        // --- Rendering & UI Update Functions ---
+        function setScenario(ref, gen, nasF1) { refLenInput.value = ref; genLenInput.value = gen; nasF1Input.value = nasF1.toFixed(2); initializeStateAndRender(); }
+        function updateGridBackground() { if (numUnitsX > 0 && numUnitsY > 0) { chartGrid.style.backgroundSize = `calc(100% / ${numUnitsX}) calc(100% / ${numUnitsY})`; } }
+        function renderIdealMappingWindows() {
+            idealMappingContainer.innerHTML = ''; if (!currentPrecisionWindowsForRendering || numUnitsX === 0 || numUnitsY === 0) return;
+            currentPrecisionWindowsForRendering.forEach((windowData, gen_chunk_idx) => {
+                if (gen_chunk_idx >= numUnitsX) return;
+                const idealWindowDiv = document.createElement('div'); idealWindowDiv.className = 'ideal-mapping-window';
+                idealWindowDiv.style.left = `calc(${gen_chunk_idx} * 100% / ${numUnitsX})`; idealWindowDiv.style.width = `calc(100% / ${numUnitsX})`;
+                idealWindowDiv.style.bottom = `calc(${windowData.start} * 100% / ${numUnitsY})`; idealWindowDiv.style.height = `calc(${(windowData.end - windowData.start)} * 100% / ${numUnitsY})`;
+                idealMappingContainer.appendChild(idealWindowDiv);
+            });
+        }
+        function renderAxisLabels() {
+            axisLabelContainerX.innerHTML = ''; axisLabelContainerY.innerHTML = ''; if (numUnitsX === 0 || numUnitsY === 0) return;
+            const maxX = numUnitsX - 1, maxY = numUnitsY - 1; const yStep = Math.max(1, Math.floor(numUnitsY / 10)) || 1; const xStep = Math.max(1, Math.floor(numUnitsX / 10)) || 1;
+            for (let i = 0; i <= maxY; i += yStep) { const l = document.createElement('div'); l.className = 'axis-label'; l.textContent = i; l.style.left = '-28px'; l.style.bottom = `calc(${i}*100%/${numUnitsY} + 50%/${numUnitsY})`; l.style.transform = 'translateY(50%)'; axisLabelContainerY.appendChild(l); }
+            if (maxY > 0 && (maxY % yStep !== 0 || (numUnitsY <= 10 && numUnitsY > 1))) { if (!axisLabelContainerY.querySelector(`:scope > div[data-value='${maxY}']`)) { const l = document.createElement('div'); l.className = 'axis-label'; l.dataset.value = maxY; l.textContent = maxY; l.style.left = '-28px'; l.style.bottom = `calc(${maxY}*100%/${numUnitsY} + 50%/${numUnitsY})`; l.style.transform = 'translateY(50%)'; axisLabelContainerY.appendChild(l); } }
+            for (let i = 0; i <= maxX; i += xStep) { const l = document.createElement('div'); l.className = 'axis-label'; l.textContent = i; l.style.bottom = '-25px'; l.style.left = `calc(${i}*100%/${numUnitsX} + 50%/${numUnitsX})`; l.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(l); }
+            if (maxX > 0 && (maxX % xStep !== 0 || (numUnitsX <= 10 && numUnitsX > 1))) { if (!axisLabelContainerX.querySelector(`:scope > div[data-value='${maxX}']`)) { const l = document.createElement('div'); l.className = 'axis-label'; l.dataset.value = maxX; l.textContent = maxX; l.style.bottom = '-25px'; l.style.left = `calc(${maxX}*100%/${numUnitsX} + 50%/${numUnitsX})`; l.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(l); } }
+        }
+        function updateDynamicBackground(finalScore) {
+            const score = isNaN(finalScore) ? 0 : finalScore; const saturation = 30 + 40 * score; const lightness = 85 + 10 * score;
+            const startColor = `hsl(170, ${saturation - 10}%, ${lightness - 5}%)`; const endColor = `hsl(190, ${saturation}%, ${lightness}%)`;
+            appBackground.style.background = `linear-gradient(135deg, ${startColor} 0%, ${endColor} 100%)`;
+        }
+        function renderBarGraphs(internals, regularizer, nasF1, regularizedNas) {
+            timelineAreaValText.textContent = internals.timeline_area.toFixed(0); totalMappingWindowAreaValText.textContent = internals.total_mapping_window_area.toFixed(0);
+            minAreaValText.textContent = internals.min_area.toFixed(3); windowRegularizerValText.textContent = regularizer.toFixed(3);
+            originalNasValText.textContent = nasF1.toFixed(3); regularizedNasValText.textContent = regularizedNas.toFixed(3);
+            timelineAreaBar.style.width = internals.timeline_area > 0 ? '100%' : '0%';
+            const tmwaRatio = internals.timeline_area > 0 ? (internals.total_mapping_window_area / internals.timeline_area) * 100 : 0;
+            totalMappingWindowAreaBar.style.width = `${Math.min(100, Math.max(0, tmwaRatio))}%`; minAreaBar.style.width = `${Math.min(100, Math.max(0, internals.min_area * 100))}%`;
+            windowRegularizerBar.style.width = `${Math.min(100, Math.max(0, regularizer * 100))}%`; originalNasBar.style.width = `${Math.min(100, Math.max(0, nasF1 * 100))}%`;
+            regularizedNasBar.style.width = `${Math.min(100, Math.max(0, regularizedNas * 100))}%`;
+            const coverageRatio = internals.timeline_area > 0 ? internals.total_mapping_window_area / internals.timeline_area : 0;
+            coverageRatioText.textContent = `${(coverageRatio * 100).toFixed(1)}%`; let penaltyLevel = 'None';
+            if (regularizer > 0.7) penaltyLevel = 'High'; else if (regularizer > 0.4) penaltyLevel = 'Medium'; else if (regularizer > 0.1) penaltyLevel = 'Low';
+            penaltyLevelText.textContent = penaltyLevel; const scoreImpact = nasF1 - regularizedNas;
+            scoreImpactText.textContent = `${scoreImpact >= 0 ? '−' : '+'}${Math.abs(scoreImpact).toFixed(3)}`;
+            scoreImpactText.style.color = scoreImpact > 0 ? '#ef4444' : (scoreImpact < 0 ? '#10b981' : '#475569');
+        }
+        
+        // --- Main State & Render Orchestrator ---
+        function initializeStateAndRender() {
+            numUnitsY = Math.max(1, Math.min(MAX_CHUNKS, parseInt(refLenInput.value, 10) || 1));
+            numUnitsX = Math.max(1, Math.min(MAX_CHUNKS, parseInt(genLenInput.value, 10) || 1));
+            refLenInput.value = numUnitsY; genLenInput.value = numUnitsX;
+            const dummyNasF1 = parseFloat(nasF1Input.value) || 0; nasF1Input.value = dummyNasF1.toFixed(2);
+            
+            const mappingData = get_mapping_windows_js(numUnitsY, numUnitsX);
+            currentPrecisionWindowsForRendering = mappingData.precision_windows_for_rendering;
+            
+            const regularizerResult = _calculate_window_regularizer_js(numUnitsY, numUnitsX, mappingData.windows_for_regularizer_calc, mappingData.longer_axis_len);
+            const regularizedNas = _regularize_nas_js(dummyNasF1, regularizerResult.window_regularizer);
+            
+            requestAnimationFrame(() => {
+                updateGridBackground(); renderIdealMappingWindows(); renderAxisLabels();
+                renderBarGraphs(regularizerResult.internals, regularizerResult.window_regularizer, dummyNasF1, regularizedNas);
+                updateDynamicBackground(regularizedNas);
+            });
+
+            if (window.renderMathInElement) { renderMathInElement(document.body, { delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ] }); }
+        }
+        
+        // --- Event Listeners & Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Standard input listeners
+            refLenInput.addEventListener('input', initializeStateAndRender);
+            genLenInput.addEventListener('input', initializeStateAndRender);
+            nasF1Input.addEventListener('input', initializeStateAndRender);
+            window.addEventListener('resize', initializeStateAndRender);
+            document.getElementById('start-tour-btn').addEventListener('click', () => tourManager.start());
+            
+            // Penalty Attribution Listener
+            document.getElementById('penalty-bar-container').addEventListener('mouseover', () => {
+                if (parseFloat(windowRegularizerValText.textContent) > 0) {
+                    idealMappingContainer.classList.add('penalty-highlight-active');
+                }
+            });
+            document.getElementById('penalty-bar-container').addEventListener('mouseout', () => {
+                idealMappingContainer.classList.remove('penalty-highlight-active');
+            });
+
+            // Resizing Logic
+            const handleX = document.getElementById('resizeHandleX');
+            const handleY = document.getElementById('resizeHandleY');
+            let isResizing = null;
+
+            const handleResizeMouseDown = (e) => {
+                isResizing = e.target.id === 'resizeHandleX' ? 'x' : 'y';
+                document.body.style.cursor = isResizing === 'x' ? 'ew-resize' : 'ns-resize';
+                document.body.style.userSelect = 'none';
+            };
+
+            const handleResizeMouseMove = (e) => {
+                if (!isResizing) return;
+                const rect = chartContainer.getBoundingClientRect();
+                if (isResizing === 'x') {
+                    const newWidth = e.clientX - rect.left;
+                    const newGenLen = Math.round((newWidth / rect.width) * (MAX_CHUNKS - 1)) + 1;
+                    genLenInput.value = Math.max(1, Math.min(MAX_CHUNKS, newGenLen));
+                } else { // isResizing === 'y'
+                    const newHeight = rect.bottom - e.clientY;
+                    const newRefLen = Math.round((newHeight / rect.height) * (MAX_CHUNKS - 1)) + 1;
+                    refLenInput.value = Math.max(1, Math.min(MAX_CHUNKS, newRefLen));
+                }
+                initializeStateAndRender();
+            };
+            
+            const handleResizeMouseUp = () => {
+                isResizing = null;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            };
+
+            handleX.addEventListener('mousedown', handleResizeMouseDown);
+            handleY.addEventListener('mousedown', handleResizeMouseDown);
+            document.addEventListener('mousemove', handleResizeMouseMove);
+            document.addEventListener('mouseup', handleResizeMouseUp);
+
+            initializeStateAndRender();
+        });
+
+    </script>
+</body>
+</html>

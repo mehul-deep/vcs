@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCS Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Ensure Inter font is loaded */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        /* --- COMPONENT DISCOVERY SECTION --- */
+        .component-discovery-section {
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .discovery-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .discovery-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #0f766e;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .discovery-subtitle {
+            font-size: 1.25rem;
+            color: #64748b;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .components-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .component-discovery-section {
+                padding: 2rem 1rem;
+            }
+            
+            .discovery-title {
+                font-size: 2rem;
+            }
+            
+            .discovery-subtitle {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* --- COMPONENT CARDS (Unified Teal Theme) --- */
+        .component-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+        }
+
+        .component-card:hover {
+            transform: translateY(-8px);
+            border-color: #14b8a6;
+            box-shadow: 0 20px 25px -5px rgba(20, 184, 166, 0.15), 0 10px 10px -5px rgba(20, 184, 166, 0.04);
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+            color: #0d9488;
+            margin-bottom: 1rem;
+        }
+
+        .card-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+            color: #0f766e;
+        }
+
+        .card-content {
+            padding: 0 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 0.75rem 0;
+            line-height: 1.2;
+        }
+
+        .card-description {
+            font-size: 1rem;
+            color: #6b7280;
+            line-height: 1.5;
+            margin: 0 0 1rem 0;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            background-color: #f0fdfa;
+            color: #0d9488;
+            border-radius: 0.375rem;
+            border: 1px solid #99f6e4;
+        }
+
+        .card-footer {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            margin-top: auto;
+        }
+
+        .demo-button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            color: white;
+        }
+
+        .demo-button:not(.coming-soon):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px -3px rgba(20, 184, 166, 0.3);
+        }
+
+        .demo-button.coming-soon {
+            background-color: #f9fafb;
+            color: #9ca3af;
+            border: 1px solid #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        .demo-button .fas {
+            margin-right: 0.5rem;
+        }
+
+        /* --- HERO SECTION STYLING --- */
+        #hero-section {
+            background: linear-gradient(45deg, #0d9488, #0f766e);
+            color: white;
+        }
+
+        #hero-section h1 {
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .video-alignment-wrapper {
+            aspect-ratio: 16/9;
+        }
+
+        @media (min-width: 768px) {
+            .video-alignment-wrapper {
+                aspect-ratio: unset;
+                height: 100%;
+                min-height: 400px;
+            }
+        }
+
+        .video-alignment-wrapper video {
+            object-fit: contain;
+        }
+
+        /* --- HERO LINK BOXES --- */
+        .hero-link-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 0.75rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            text-decoration: none;
+            color: #ccfbf1;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-height: 100px;
+            cursor: pointer;
+        }
+
+        .hero-link-box:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero-link-box span {
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        /* --- MODAL STYLING --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Component Modal */
+        .component-modal-container {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 95%;
+            max-width: 1200px;
+            max-height: 95vh;
+            overflow: hidden;
+            transform: translateY(50px) scale(0.95);
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show .component-modal-container {
+            transform: translateY(0) scale(1);
+        }
+
+        .component-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+        }
+
+        .modal-title-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .modal-component-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .modal-title-info h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f766e;
+            margin: 0;
+        }
+
+        .modal-subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .modal-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-nav-btn {
+            background: none;
+            border: 1px solid #d1d5db;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .modal-nav-btn:hover {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+            color: #374151;
+        }
+
+        .modal-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .component-modal-content {
+            height: calc(95vh - 100px);
+            overflow: hidden;
+        }
+
+        .component-iframe-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: #f8fafc;
+        }
+
+        .component-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        .iframe-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .loading-spinner {
+            text-align: center;
+        }
+
+        .iframe-coming-soon {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .coming-soon-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .iframe-coming-soon.hidden {
+            display: none;
+        }
+
+        /* Authors Modal */
+        .modal-container {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            transform: translateY(50px) scale(0.95);
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-container {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f766e;
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .modal-content {
+            padding: 2rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 100px);
+        }
+
+        .authors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .author-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .author-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
+            border-color: #14b8a6;
+        }
+
+        .author-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .author-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 1.5rem;
+            color: #0d9488;
+        }
+
+        .author-info {
+            flex: 1;
+        }
+
+        .author-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 0.25rem 0;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .author-rank {
+            font-size: 0.75rem;
+            color: #0d9488;
+            font-weight: 600;
+            margin-left: 0.25rem;
+        }
+
+        .author-role {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .author-details {
+            margin-top: 1rem;
+        }
+
+        .author-affiliation {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .author-links {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .author-link-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .author-link-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+        }
+
+        .author-link-btn.external {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        }
+
+        .author-link-btn.external:hover {
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .modal-footer {
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+        }
+
+        .institution-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .component-modal-container {
+                width: 98%;
+                max-height: 98vh;
+            }
+            
+            .component-modal-header {
+                padding: 1rem 1.5rem;
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .modal-title-section {
+                justify-content: center;
+            }
+            
+            .modal-controls {
+                justify-content: center;
+            }
+            
+            .component-modal-content {
+                height: calc(98vh - 140px);
+            }
+            
+            .modal-component-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .modal-title-info h2 {
+                font-size: 1.25rem;
+            }
+
+            .modal-container {
+                width: 95%;
+                margin: 1rem;
+            }
+            
+            .modal-header {
+                padding: 1rem 1.5rem;
+            }
+            
+            .modal-content {
+                padding: 1.5rem;
+            }
+            
+            .modal-title {
+                font-size: 1.25rem;
+            }
+            
+            .authors-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .author-card {
+                padding: 1rem;
+            }
+            
+            .author-avatar {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+            
+            .author-name {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="playgroundContent" class="tab-inner-content">
+        <article class="bg-white rounded-xl shadow-xl overflow-hidden">
+            <!-- Hero Section -->
+            <section id="hero-section" class="py-10 px-4 sm:px-6 lg:px-8">
+                <div class="container mx-auto">
+                    <div class="flex flex-col md:flex-row md:items-stretch gap-8 lg:gap-12">
+                        <!-- Video Section -->
+                        <div class="md:w-1/2 lg:w-3/5 w-full flex md:items-start">
+                            <div class="video-alignment-wrapper rounded-lg shadow-2xl overflow-hidden border-2 border-teal-500/50 bg-black w-full">
+                                <div class="relative w-full h-full">
+                                    <video autoplay muted loop playsinline class="rounded-md absolute top-0 left-0 w-full h-full object-contain">
+                                        <source src="assets/videos/vcs/vcs.mp4" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Title and Links Section -->
+                        <div class="md:w-1/2 lg:w-2/5 w-full text-left flex flex-col">
+                            <div class="flex-grow">
+                                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3 leading-tight">
+                                    Video Comprehension Score (VCS)
+                                </h1>
+                                <p class="text-teal-200 text-base sm:text-lg mb-6">
+                                    Interactive playground to explore and understand the core concepts of VCS through hands-on experimentation.
+                                </p>
+                                
+                                <!-- 6 Link Boxes in 3x2 Grid -->
+                                <div class="grid grid-cols-2 gap-3 mb-6">
+                                    <a href="https://github.com/hdubey-debug/vcs" target="_blank" rel="noopener noreferrer" class="hero-link-box group">
+                                        <i class="fab fa-github fa-2x mb-2 text-teal-300 group-hover:text-white transition-colors"></i>
+                                        <span class="text-sm font-medium">GitHub Repository</span>
+                                    </a>
+                                    <a href="https://test.pypi.org/project/vcs-metrics/" target="_blank" rel="noopener noreferrer" class="hero-link-box group">
+                                        <i class="fas fa-box-open fa-2x mb-2 text-teal-300 group-hover:text-white transition-colors"></i>
+                                        <span class="text-sm font-medium">PyPI Package</span>
+                                    </a>
+                                    <a href="#paper-url" class="hero-link-box group">
+                                        <i class="fas fa-file-alt fa-2x mb-2 text-teal-300 group-hover:text-white transition-colors"></i>
+                                        <span class="text-sm font-medium">Research Paper</span>
+                                    </a>
+                                    <a href="https://chulwoopack.com/lab/" target="_blank" rel="noopener noreferrer" class="hero-link-box group">
+                                        <i class="fas fa-flask fa-2x mb-2 text-teal-300 group-hover:text-white transition-colors"></i>
+                                        <span class="text-sm font-medium">Research Lab</span>
+                                    </a>
+                                    <a href="mailto:your-email@example.com" class="hero-link-box group">
+                                        <i class="fas fa-envelope fa-2x mb-2 text-teal-300 group-hover:text-white transition-colors"></i>
+                                        <span class="text-sm font-medium">Contact Us</span>
+                                    </a>
+                                    <div class="hero-link-box group cursor-pointer" id="authorsBox">
+                                        <i class="fas fa-users fa-2x mb-2 text-teal-300 group-hover:text-white transition-colors"></i>
+                                        <span class="text-sm font-medium">Meet Authors</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4 border-t border-teal-700/50">
+                                <p class="text-sm text-teal-300 text-center">
+                                    South Dakota State University &copy; 2024
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Component Discovery Grid -->
+            <div class="component-discovery-section">
+                <div class="discovery-header">
+                    <h2 class="discovery-title">Explore VCS Components</h2>
+                    <p class="discovery-subtitle">Click any component card to launch an interactive demonstration</p>
+                </div>
+                
+                <div class="components-grid">
+                    <!-- Introduction Card -->
+                    <div class="component-card" data-component="introduction">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-play-circle"></i>
+                            </div>
+                            <div class="card-badge">Foundation</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Introduction</h3>
+                            <p class="card-description">Learn about video description evaluation challenges and how VCS solves them</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Examples</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-rocket mr-2"></i>
+                                Explore Concepts
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Core Technologies Card -->
+
+                    <!-- GAS Card -->
+                    <div class="component-card" data-component="gas">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="card-badge">Core Metric</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Global Alignment (GAS)</h3>
+                            <p class="card-description">Assess thematics semantic quality of two paragraphs</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Examples</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-tasks mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mapping Windows Card -->
+                    <div class="component-card" data-component="mapping-windows">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-window-restore"></i>
+                            </div>
+                            <div class="card-badge">Intermediate</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Mapping Windows</h3>
+                            <p class="card-description">Define alignment ranges between texts with different lengths</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Visualization</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-window-restore mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Best Matching Card -->
+                    <div class="component-card" data-component="best-matching">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-magic"></i>
+                            </div>
+                            <div class="card-badge">Intermediate</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Best Matching</h3>
+                            <p class="card-description">Establish robust chunk correspondences using similarity constraints</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Algorithm</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-magic mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LAS Card -->
+                    <div class="component-card" data-component="las">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="card-badge">Core Metric</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Local Alignment (LAS)</h3>
+                            <p class="card-description">Assess fine-grained semantic quality of matched chunk pairs</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">F1 Score</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-tasks mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- NAS Distance Card -->
+                    <div class="component-card" data-component="nas-distance">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <div class="card-badge">Core Metric</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Distance NAS</h3>
+                            <p class="card-description">Penalize position deviations within mapping windows</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Chronology</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-route mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- NAS Line Card -->
+                    <div class="component-card" data-component="nas-line">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-wave-square"></i>
+                            </div>
+                            <div class="card-badge">Core Metric</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Line NAS</h3>
+                            <p class="card-description">Evaluate chronological flow of consecutive matched elements</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Flow Analysis</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-wave-square mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LCT NAS-D Card -->
+                    <div class="component-card" data-component="lct-nas-d">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-sliders-h"></i>
+                            </div>
+                            <div class="card-badge">Advanced</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">LCT Effect on NAS-D</h3>
+                            <p class="card-description">Configure chronology tolerance for Distance NAS calculations</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Tolerance</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-sliders-h mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- LCT NAS-L Card -->
+                    <div class="component-card" data-component="lct-nas-l">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-sliders-h"></i>
+                            </div>
+                            <div class="card-badge">Advanced</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">LCT Effect on NAS-L</h3>
+                            <p class="card-description">Configure chronology tolerance for Line NAS flow analysis</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Flow Control</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-sliders-h mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Window Regularizer Card -->
+                    <div class="component-card" data-component="window-regularizer">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-window-maximize"></i>
+                            </div>
+                            <div class="card-badge">Advanced</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Window Regularizer</h3>
+                            <p class="card-description">Adjust NAS scores for extreme text length disparities</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Regularization</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-window-maximize mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+                    <div class="component-card" data-component="nas">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="card-badge">Core Metric</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Narrative Alignment (NAS)</h3>
+                            <p class="card-description">Assess chunk levle narrative alignment quality of two paragraphs</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Examples</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-tasks mr-2"></i>
+                                Try Interactive Demo
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Final VCS Card -->
+                    <div class="component-card" data-component="final-vcs">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <div class="card-badge">Complete System</div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Final VCS Score</h3>
+                            <p class="card-description">Combine GAS, LAS, and NAS into the comprehensive Video Comprehension Score</p>
+                            <div class="card-tags">
+                                <span class="tag">Interactive</span>
+                                <span class="tag">Complete Demo</span>
+                                <span class="tag">All Metrics</span>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="demo-button">
+                                <i class="fas fa-calculator mr-2"></i>
+                                Experience Complete VCS
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Component Demo Modal -->
+        <div id="componentModal" class="modal-overlay">
+            <div class="component-modal-container">
+                <div class="component-modal-header">
+                    <div class="modal-title-section">
+                        <div class="modal-component-icon">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div class="modal-title-info">
+                            <h2 class="modal-title" id="modalTitle">Component Demo</h2>
+                            <p class="modal-subtitle" id="modalSubtitle">Interactive demonstration</p>
+                        </div>
+                    </div>
+                    <div class="modal-controls">
+                        <button class="modal-nav-btn" id="prevComponent" title="Previous Component">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="modal-nav-btn" id="nextComponent" title="Next Component">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="modal-close" id="closeComponentModal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="component-modal-content">
+                    <div class="component-iframe-container">
+                        <iframe 
+                            id="componentIframe"
+                            class="component-iframe"
+                            title="Component Interactive Demo"
+                            >
+                        </iframe>
+                        
+                        <!-- Loading State -->
+                        <div class="iframe-loading" id="iframeLoading">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin text-4xl text-teal-600 mb-4"></i>
+                                <p class="text-lg text-gray-600">Loading interactive demo...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Coming Soon State -->
+                        <div class="iframe-coming-soon hidden" id="iframeComingSoon">
+                            <div class="coming-soon-content">
+                                <i class="fas fa-tools text-6xl text-gray-400 mb-4"></i>
+                                <h3 class="text-2xl font-bold text-gray-700 mb-2">Demo Coming Soon</h3>
+                                <p class="text-gray-600">This interactive demonstration is currently under development.</p>
+                                <p class="text-sm text-gray-500 mt-4">Check back soon for an amazing interactive experience!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authors Modal -->
+        <div id="authorsModal" class="modal-overlay">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 class="modal-title">
+                        <i class="fas fa-users text-teal-600 mr-2"></i>
+                        Research Team
+                    </h2>
+                    <button class="modal-close" id="closeModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-content">
+                    <div class="authors-grid">
+                        <!-- Author 1 -->
+                        <div class="author-card">
+                            <div class="author-header">
+                                <div class="author-avatar">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="author-info">
+                                    <h3 class="author-name">
+                                        Harsh Dubey
+                                        <sup class="author-rank">1</sup>
+                                    </h3>
+                                    <p class="author-role">First Author</p>
+                                </div>
+                            </div>
+                            <div class="author-details">
+                                <p class="author-affiliation">
+                                    <i class="fas fa-university text-teal-500 mr-1"></i>
+                                    South Dakota State University
+                                </p>
+                                <div class="author-links">
+                                    <a href="#author-harsh" class="author-link-btn">
+                                        <i class="fas fa-user mr-1"></i>Profile
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Author 2 -->
+                        <div class="author-card">
+                            <div class="author-header">
+                                <div class="author-avatar">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="author-info">
+                                    <h3 class="author-name">
+                                        Mukhtiar Ali
+                                        <sup class="author-rank">2</sup>
+                                    </h3>
+                                    <p class="author-role">Co-Author</p>
+                                </div>
+                            </div>
+                            <div class="author-details">
+                                <p class="author-affiliation">
+                                    <i class="fas fa-university text-teal-500 mr-1"></i>
+                                    South Dakota State University
+                                </p>
+                                <div class="author-links">
+                                    <a href="#author-mukhtiar" class="author-link-btn">
+                                        <i class="fas fa-user mr-1"></i>Profile
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Author 3 -->
+                        <div class="author-card">
+                            <div class="author-header">
+                                <div class="author-avatar">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="author-info">
+                                    <h3 class="author-name">
+                                        Sugam Mishra
+                                        <sup class="author-rank">3</sup>
+                                    </h3>
+                                    <p class="author-role">Co-Author</p>
+                                </div>
+                            </div>
+                            <div class="author-details">
+                                <p class="author-affiliation">
+                                    <i class="fas fa-university text-teal-500 mr-1"></i>
+                                    South Dakota State University
+                                </p>
+                                <div class="author-links">
+                                    <a href="#author-sugam" class="author-link-btn">
+                                        <i class="fas fa-user mr-1"></i>Profile
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Author 4 -->
+                        <div class="author-card">
+                            <div class="author-header">
+                                <div class="author-avatar">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="author-info">
+                                    <h3 class="author-name">
+                                        Chulwoo Pack
+                                        <sup class="author-rank">4</sup>
+                                    </h3>
+                                    <p class="author-role">Co-Author and Advisor</p>
+                                </div>
+                            </div>
+                            <div class="author-details">
+                                <p class="author-affiliation">
+                                    <i class="fas fa-university text-teal-500 mr-1"></i>
+                                    South Dakota State University
+                                </p>
+                                <div class="author-links">
+                                    <a href="https://chulwoopack.com/" target="_blank" rel="noopener noreferrer" class="author-link-btn external">
+                                        <i class="fas fa-external-link-alt mr-1"></i>Website
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <div class="institution-info">
+                            <i class="fas fa-map-marker-alt text-teal-500 mr-2"></i>
+                            <span class="text-gray-600">South Dakota State University, Brookings, SD</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Alignment Score (LAS) Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* --- SMOOTHNESS & PERFORMANCE ENHANCEMENTS --- */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 1.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        :root {
+            --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --ease-out-cubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+        }
+
+        /* --- Glassmorphism & Enhanced Card Styles --- */
+        .interactive-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.35s var(--ease-out-cubic),
+                        box-shadow 0.35s var(--ease-out-cubic),
+                        border-color 0.35s var(--ease-out-cubic);
+            will-change: transform, box-shadow;
+        }
+        .interactive-card:hover {
+            box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 15px -8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .demo-card { background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 250, 252, 0.5) 100%); border-color: rgba(226, 232, 240, 0.7); }
+        .intro-card { background: linear-gradient(135deg, rgba(254, 252, 232, 0.6) 0%, rgba(254, 243, 199, 0.5) 100%); border-color: rgba(251, 191, 36, 0.5); }
+        .metrics-card { background: linear-gradient(135deg, rgba(240, 249, 255, 0.6) 0%, rgba(219, 234, 254, 0.5) 100%); border-color: rgba(147, 197, 253, 0.6); }
+        .formula-card { background: linear-gradient(135deg, rgba(237, 233, 254, 0.6) 0%, rgba(221, 214, 254, 0.5) 100%); border-color: rgba(196, 181, 253, 0.6); }
+
+        /* --- Segment List Styles --- */
+        .segment-list ul li {
+            margin-bottom: 4px; line-height: 1.4; font-size: 0.8rem; color: #4b5563; padding: 4px 8px; border-radius: 0.375rem; 
+            cursor: pointer; 
+            transition: background-color 0.25s var(--ease-out-quad), border-color 0.25s var(--ease-out-quad), transform 0.25s var(--ease-out-quad), box-shadow 0.25s var(--ease-out-quad);
+            border: 1px solid #e5e7eb; user-select: none; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.4); 
+            will-change: background-color, transform;
+        }
+        .segment-list ul li:hover { background-color: #f0fdfa; border-color: #ccfbf1; transform: translateX(2px); }
+        .segment-list ul li.inactive-chunk { text-decoration: line-through; color: #9ca3af; background-color: #f3f4f6; }
+        .segment-list ul li.inactive-chunk:hover { background-color: #e5e7eb; }
+
+        /* --- Chart & Visualization Elements --- */
+        .axis-label { position: absolute; font-size: 0.75rem; color: #475569; font-weight: 500; white-space: nowrap; z-index: 6; }
+        .ideal-mapping-window { position: absolute; border: 2px solid #0d9488; background-color: rgba(20, 184, 166, 0.1); box-sizing: border-box; z-index: 1; transition: all 0.3s var(--ease-out-quad); pointer-events: none; border-radius: 0.25rem; }
+        .best-match-cell { position: absolute; background-color: rgba(245, 158, 11, 0.3); border: 2px solid #f59e0b; box-sizing: border-box; z-index: 3; transition: all 0.3s ease-out; pointer-events: none; border-radius: 0.25rem; }
+        .max-similarity-cell-highlight { position: absolute; background-color: rgba(139, 92, 246, 0.25); border: 2px solid #8b5cf6; box-sizing: border-box; z-index: 2; transition: all 0.3s ease-out; pointer-events: none; display: flex; align-items: flex-end; justify-content: flex-end; padding: 2px; border-radius: 0.25rem; }
+        .context-window-text { font-size: 0.6rem; color: white; background-color: rgba(0, 0, 0, 0.5); padding: 1px 3px; border-radius: 2px; white-space: nowrap; pointer-events: none; }
+        .similarity-display-cell { width: 100%; height: 100%; text-align: center; border: none; background-color: transparent; font-size: 0.65rem; color: #475569; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        .chart-grid-background { background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px); }
+        
+        /* --- Tour Styles --- */
+        #tour-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9998; 
+            opacity: 0; transition: opacity 0.4s ease-in-out; pointer-events: none; 
+        }
+        .tour-highlight { 
+            position: relative; z-index: 9999; 
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6), 0 0 20px rgba(255, 255, 255, 0.9); 
+            border-radius: 0.5rem; transition: box-shadow 0.4s ease-in-out; 
+        }
+        #tour-callout { 
+            position: absolute; background: white; color: #334155; padding: 1rem; border-radius: 0.5rem; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px; 
+            border-left: 4px solid #3b82f6; 
+            transition: opacity 0.3s var(--ease-out-cubic), transform 0.3s var(--ease-out-cubic);
+            transform: translateY(10px);
+            opacity: 0;
+        }
+        #tour-callout.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        #tour-callout button { 
+            background-color: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.375rem; cursor: pointer; 
+            transition: background-color 0.2s var(--ease-out-quad), transform 0.2s var(--ease-out-quad); 
+        }
+        #tour-callout button:hover { background-color: #2563eb; transform: translateY(-1px); }
+
+        /* --- Guiding Cue Styles --- */
+        #guiding-cue {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: rgba(239, 246, 255, 0.8); /* Light blue, semi-transparent */
+            border: 1px solid rgba(147, 197, 253, 0.5);
+            border-left: 4px solid #3b82f6;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            color: #1e40af;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s var(--ease-out-cubic), transform 0.4s var(--ease-out-cubic);
+            height: 0;
+            overflow: hidden;
+        }
+        #guiding-cue.visible {
+            opacity: 1;
+            transform: translateY(0);
+            height: auto; /* Adjust height based on content */
+        }
+        #guiding-cue i {
+            margin-right: 0.5rem;
+        }
+        #guiding-cue strong {
+            font-weight: 600;
+            color: #1d4ed8;
+        }
+
+        /* --- Data Ghosting Styles --- */
+        .score-ghost {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s var(--ease-out-cubic), transform 0.6s var(--ease-out-cubic);
+        }
+        .score-ghost.visible {
+            opacity: 0.4;
+            transform: translateY(-20px);
+        }
+
+        /* --- Other Styled Components --- */
+        .preset-btn { transition: all 0.2s var(--ease-out-quad); background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); }
+        .preset-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3); }
+        .math-formula { background: linear-gradient(135deg, rgba(248, 250, 252, 0.7) 0%, rgba(241, 245, 249, 0.6) 100%); border: 1px solid #cbd5e1; font-family: 'Courier New', monospace; }
+        .step-number { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.875rem; flex-shrink: 0; }
+        details summary { cursor: pointer; user-select: none; transition: color 0.2s var(--ease-out-quad); }
+        details summary:hover { color: #1d4ed8; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary .summary-icon { display: inline-block; margin-right: 0.5rem; transition: transform 0.25s var(--ease-out-cubic); }
+        details[open] summary .summary-icon { transform: rotate(90deg); }
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased">
+    <div id="app-background" class="fixed inset-0 z-[-1] transition-all duration-1000"></div>
+    <div id="tour-overlay"></div>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-8xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 relative">
+            <div class="flex items-center justify-center mb-4">
+                <div class="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide mr-2">Interactive Demo</div>
+                <div class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">Fine-Grained Quality</div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-teal-600 to-teal-800 bg-clip-text text-transparent">Local Alignment Score (LAS)</h1>
+            <p class="mt-3 text-lg text-slate-600 max-w-3xl mx-auto">Measure the semantic quality of matched chunk pairs using F1-based local alignment scoring.</p>
+            <button id="start-tour-btn" class="absolute top-0 right-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105">
+                <i class="fas fa-magic mr-2"></i>Start Tour
+            </button>
+        </div>
+
+        <!-- Introduction Section -->
+        <div class="mb-8">
+            <div id="tour-step-intro" class="intro-card interactive-card rounded-xl p-6">
+                <div class="flex items-center mb-4"><i class="fas fa-lightbulb text-amber-600 text-xl mr-3"></i><h2 class="text-xl font-semibold text-amber-800">Introduction to Local Alignment Score</h2></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-globe text-blue-500 mr-2"></i>Global Alignment (GAS)</h3><p class="text-sm text-slate-700">Captures broad thematic similarity using full-document embeddings. Excellent for overall narrative coherence, but may miss fine-grained semantic discrepancies.</p></div>
+                    <div class="bg-white bg-opacity-60 p-4 rounded-lg"><h3 class="font-semibold text-amber-700 mb-2 flex items-center"><i class="fas fa-microscope text-teal-500 mr-2"></i>Local Alignment (LAS)</h3><p class="text-sm text-slate-700">Measures average semantic quality of matched chunk pairs. Quantifies fine-grained semantic coherence, detecting local inconsistencies and missing details.</p></div>
+                </div>
+                <details class="mb-4">
+                    <summary class="font-semibold text-amber-700 mb-3 flex items-center"><i class="fas fa-chevron-right summary-icon"></i>LAS Computation Details</summary>
+                    <div class="mt-4 space-y-6 ml-6 border-l-2 border-slate-200 pl-6">
+                        <!-- Precision -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4 bg-gradient-to-r from-teal-500 to-cyan-500">P</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Precision LAS</h4>
+                                <p class="text-sm text-slate-600 mb-2">Calculates the average similarity of all matches from Generated Chunks to Reference Chunks.</p>
+                                <div class="math-formula p-3 rounded-lg text-sm">
+                                    <code class="text-xs block">LAS_P = (1/|M_P|) × Σ Sim(c_gen, c_ref)</code>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Recall -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4 bg-gradient-to-r from-amber-500 to-orange-500">R</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Recall LAS</h4>
+                                <p class="text-sm text-slate-600 mb-2">Calculates the average similarity of all matches from Reference Chunks to Generated Chunks.</p>
+                                <div class="math-formula p-3 rounded-lg text-sm">
+                                    <code class="text-xs block">LAS_R = (1/|M_R|) × Σ Sim(c_ref, c_gen)</code>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- F1 -->
+                        <div class="flex items-start">
+                            <div class="step-number mr-4">F1</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 mb-1">Overall LAS (F1)</h4>
+                                <p class="text-sm text-slate-600 mb-2">The harmonic mean of Precision and Recall LAS, providing a single, balanced score.</p>
+                                <div class="math-formula p-3 rounded-lg text-sm">
+                                    <code class="text-xs block">LAS = 2 × (LAS_P × LAS_R) / (LAS_P + LAS_R)</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <!-- App Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Matrix Visualization -->
+                <div id="tour-step-viz" class="demo-card interactive-card rounded-xl p-6">
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-semibold mb-2"><i class="fas fa-chart-line mr-1"></i>MATCHED PAIRS VISUALIZATION</div>
+                        <h2 class="text-xl font-bold text-slate-800">Similarity Matrix & Best Matches</h2>
+                        <p class="text-sm text-slate-500 mt-1">Observe how chunk deactivation affects best matches and LAS scores</p>
+                    </div>
+                    <div class="relative w-full max-w-2xl mx-auto pt-4 pb-12 pl-12 pr-2">
+                        <div class="absolute top-1/2 -left-10 -translate-y-1/2 -rotate-90 font-semibold text-sm text-slate-600 whitespace-nowrap">Reference Chunks</div>
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 font-semibold text-sm text-slate-600">Generated Chunks</div>
+                        <div class="relative w-full aspect-square">
+                            <div id="chartGrid" class="absolute inset-0 bg-white rounded-lg chart-grid-background border border-slate-200">
+                                <div id="idealMappingContainer"></div>
+                                <div id="maxSimilarityHighlightContainer"></div>
+                                <div id="bestMatchHighlightContainer"></div>
+                                <div id="similarityValueContainer"></div>
+                                <div id="axisLabelContainerY"></div>
+                                <div id="axisLabelContainerX"></div>
+                            </div>
+                        </div>
+                    </div>
+                     <!-- NEW: Legend for Visualization -->
+                    <div class="flex justify-center items-center gap-6 mt-4 pt-4 border-t border-slate-200/80">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 rounded border-2 border-teal-600 bg-teal-500/20"></div>
+                            <span class="text-xs text-slate-600 font-medium">Mapping Window</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 rounded border-2 border-amber-500 bg-amber-500/30"></div>
+                            <span class="text-xs text-slate-600 font-medium">Best Match</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Chunk Lists -->
+                <div id="tour-step-chunks" class="demo-card interactive-card rounded-xl p-6">
+                    <div class="text-center mb-6"><h3 class="text-lg font-semibold text-slate-800 mb-2">Interactive Chunk Management</h3><p class="text-sm text-slate-500">Click any chunk below to activate/deactivate it and observe the real-time impact</p></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="segment-list" id="referenceSegments">
+                            <h4 class="text-md font-semibold text-slate-700 mb-2 flex items-center"><i class="fas fa-list text-teal-600 mr-2"></i>Reference (<span id="activeRefChunkCount">0</span>/<span id="totalRefChunkCount">0</span>)</h4>
+                            <ul class="space-y-1 h-96 overflow-y-auto pr-2 bg-slate-50/50 rounded p-2 border"></ul>
+                        </div>
+                        <div class="segment-list" id="generatedSegments">
+                            <h4 class="text-md font-semibold text-slate-700 mb-2 flex items-center"><i class="fas fa-list text-amber-600 mr-2"></i>Generated (<span id="activeGenChunkCount">0</span>/<span id="totalGenChunkCount">0</span>)</h4>
+                            <ul class="space-y-1 h-96 overflow-y-auto pr-2 bg-slate-50/50 rounded p-2 border"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-6 flex flex-col gap-6">
+                    <div id="tour-step-metrics" class="metrics-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center"><i class="fas fa-tachometer-alt text-blue-600 mr-2"></i>Live LAS Metrics</h3>
+                        <div class="space-y-4">
+                             <div class="relative text-center bg-blue-50/70 p-3 rounded-lg border border-blue-200">
+                                <label class="block text-sm font-medium text-blue-700 mb-1">Overall LAS (F1)</label>
+                                <span id="f1LASGhost" class="score-ghost text-4xl font-bold text-blue-600"></span>
+                                <span id="f1LASValue" class="text-4xl font-bold text-blue-600">0.000</span>
+                                <p class="text-xs text-slate-500 mt-1">Harmonic mean of P & R</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                               <div class="relative text-center">
+                                    <label class="block text-sm font-medium text-blue-700 mb-1">Precision LAS</label>
+                                    <span id="precisionLASGhost" class="score-ghost text-3xl font-bold text-teal-600"></span>
+                                    <span id="precisionLASValue" class="text-3xl font-bold text-teal-600">0.000</span>
+                                    <p class="text-xs text-slate-500 mt-1">Gen → Ref quality</p>
+                                </div>
+                                <div class="relative text-center">
+                                    <label class="block text-sm font-medium text-blue-700 mb-1">Recall LAS</label>
+                                    <span id="recallLASGhost" class="score-ghost text-3xl font-bold text-amber-600"></span>
+                                    <span id="recallLASValue" class="text-3xl font-bold text-amber-600">0.000</span>
+                                    <p class="text-xs text-slate-500 mt-1">Ref → Gen quality</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tour-step-scenarios" class="demo-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center"><i class="fas fa-magic text-purple-600 mr-2"></i>Test Scenarios</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="resetToFullScenario()"><i class="fas fa-refresh mr-2"></i>Reset Full</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="simulateOmissions()"><i class="fas fa-minus-circle mr-2"></i>Omissions</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="simulateHallucination()"><i class="fas fa-plus-circle mr-2"></i>Hallucination</button>
+                            <button class="preset-btn w-full text-white px-3 py-2 rounded-lg text-xs font-medium" onclick="simulateMisalignment()"><i class="fas fa-exchange-alt mr-2"></i>Misalignment</button>
+                        </div>
+                        <!-- Guiding Cue Element -->
+                        <div id="guiding-cue"></div>
+                    </div>
+                    
+                    <div class="formula-card interactive-card rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-purple-800 mb-3 flex items-center"><i class="fas fa-cogs text-purple-600 mr-2"></i>Algorithm Parameters</h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block text-xs font-medium text-purple-700">Context Cutoff</label><span id="contextCutoffDisplay" class="text-sm font-semibold text-slate-700 bg-white/60 px-2 py-1 rounded">0.60</span></div>
+                                <div><label class="block text-xs font-medium text-purple-700">Context Control</label><span id="contextWindowCtrlDisplay" class="text-sm font-semibold text-slate-700 bg-white/60 px-2 py-1 rounded">4.0</span></div>
+                            </div>
+                            <div class="text-xs text-purple-700 bg-purple-50/70 p-2 rounded border border-purple-200">LAS uses a best matching algorithm, then calculates the average similarity scores of the matched pairs.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- DOM Element References ---
+        const chartGrid = document.getElementById('chartGrid');
+        const idealMappingContainer = document.getElementById('idealMappingContainer');
+        const bestMatchHighlightContainer = document.getElementById('bestMatchHighlightContainer');
+        const maxSimilarityHighlightContainer = document.getElementById('maxSimilarityHighlightContainer');
+        const similarityValueContainer = document.getElementById('similarityValueContainer');
+        const axisLabelContainerX = document.getElementById('axisLabelContainerX');
+        const axisLabelContainerY = document.getElementById('axisLabelContainerY');
+        const contextCutoffDisplay = document.getElementById('contextCutoffDisplay');
+        const contextWindowCtrlDisplay = document.getElementById('contextWindowCtrlDisplay');
+        const precisionLASDisplay = document.getElementById('precisionLASValue');
+        const recallLASDisplay = document.getElementById('recallLASValue');
+        const f1LASDisplay = document.getElementById('f1LASValue');
+        const precisionLASGhost = document.getElementById('precisionLASGhost');
+        const recallLASGhost = document.getElementById('recallLASGhost');
+        const f1LASGhost = document.getElementById('f1LASGhost');
+        const referenceSegmentsUl = document.querySelector('#referenceSegments ul');
+        const generatedSegmentsUl = document.querySelector('#generatedSegments ul');
+        const activeRefChunkCountSpan = document.getElementById('activeRefChunkCount');
+        const totalRefChunkCountSpan = document.getElementById('totalRefChunkCount');
+        const activeGenChunkCountSpan = document.getElementById('activeGenChunkCount');
+        const totalGenChunkCountSpan = document.getElementById('totalGenChunkCount');
+        const appBackground = document.getElementById('app-background');
+        const guidingCue = document.getElementById('guiding-cue');
+
+        // --- Constants & Master Data ---
+        const MASTER_NUM_UNITS_Y = 9;
+        const MASTER_NUM_UNITS_X = 9;
+        const CONTEXT_CUTOFF_DEFAULT = 0.6;
+        const CONTEXT_WINDOW_CTRL_DEFAULT = 4.0;
+        const masterReferenceChunks = ["The old market bell rings starting a busy market", "Vendors open their bright stalls in the busy square while the smell of fresh bread fills the air", "A young seller shouts out good deals as curious people gather around", "The steady ring of the bell sets the pace for the day", "A wise old vendor stops by his stall giving advice to those who pass by", "As the market gets busy the bell rings again at midday reminding everyone of the community spirit", "A light rain briefly slows the crowd but everyone is spirit stays strong", "Local storytellers tell simple tales that catch everyone is attention", "As evening comes the old bell rings one last time perfectly echoing the start of the day"];
+        const masterGeneratedChunks = ["At first light the town s antique bell clangs signalling that the market is open for business", "Stalls spring to life all around the square their owners lifting colourful awnings while the warm scent of freshbaked bread drifts through the crowd", "A lively young hawker calls out bargains drawing curious shoppers closer", "That bell keeps time for everyone its steady peal guiding the morning rush", "Nearby an older merchant pauses at his booth offering bits of seasoned advice to anyone who will listen", "When noon rolls around the bell sounds again a friendly reminder of the shared spirit that holds the place together", "A brief shower scatters a few people but the mood never really fades", "Storytellers soon reclaim the moment with simple tales that pull listeners back in", "As dusk settles the same bell rings one final note neatly bookending the day it helped begin"];
+        const masterSimilarityValues = [[0.737, 0.360, 0.286, 0.461, 0.284, 0.388, 0.062, 0.139, 0.396], [0.462, 0.783, 0.295, 0.269, 0.264, 0.227, 0.142, 0.158, 0.232], [0.244, 0.238, 0.814, 0.105, 0.337, 0.138, 0.120, 0.169, 0.084], [0.555, 0.259, 0.100, 0.734, 0.137, 0.593, 0.167, 0.199, 0.656], [0.258, 0.254, 0.293, 0.168, 0.774, 0.169, 0.110, 0.165, 0.151], [0.569, 0.340, 0.248, 0.483, 0.241, 0.764, 0.180, 0.216, 0.507], [0.134, 0.219, 0.106, 0.243, 0.133, 0.239, 0.689, 0.183, 0.177], [0.261, 0.259, 0.218, 0.266, 0.274, 0.286, 0.220, 0.679, 0.257], [0.537, 0.277, 0.059, 0.549, 0.218, 0.608, 0.192, 0.212, 0.869]];
+
+        // --- State Variables ---
+        let activeReferenceIndices = [];
+        let activeGeneratedIndices = [];
+        let currentNumUnitsY, currentNumUnitsX;
+        let currentSimilarityMatrix = []; 
+        let currentPrecisionWindows = []; 
+        let currentRecallWindows = []; 
+        const contextCutoffValue = CONTEXT_CUTOFF_DEFAULT; 
+        const contextWindowCtrl = CONTEXT_WINDOW_CTRL_DEFAULT; 
+        let manualClickCounter = 0;
+        let cueTimeout;
+
+        // --- Helper Functions ---
+        const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+        const _calculate_f1 = (p, r) => (p + r === 0) ? 0.0 : (2 * p * r) / (p + r);
+
+        // --- Guiding Cue Manager ---
+        function showGuidingCue(message) {
+            if (cueTimeout) clearTimeout(cueTimeout);
+            guidingCue.innerHTML = `<i class="fas fa-info-circle"></i>${message}`;
+            guidingCue.classList.add('visible');
+
+            // Automatically hide the cue after 8 seconds
+            cueTimeout = setTimeout(() => {
+                guidingCue.classList.remove('visible');
+            }, 8000);
+        }
+
+        // --- Tour Manager ---
+        const tourManager = {
+            isActive: false,
+            currentStep: 0,
+            overlay: document.getElementById('tour-overlay'),
+            steps: [
+                { selector: '#tour-step-intro', text: 'Welcome! This card explains the difference between Global (GAS) and Local (LAS) alignment scores, which measures fine-grained semantic quality.', position: 'bottom' },
+                { selector: '#tour-step-viz', text: 'This matrix shows similarity scores for each chunk pair. Orange cells are the "best matches" used for LAS calculations.', position: 'top' },
+                { selector: '#tour-step-chunks', text: 'Enable or disable individual chunks here. Deactivating chunks simulates missing or extra content. Watch how the scores change!', position: 'top' },
+                { selector: '#tour-step-metrics', text: 'The final scores are shown here. LAS is calculated for Precision (Gen→Ref), Recall (Ref→Gen), and combined into an F1 score.', position: 'left' },
+                { selector: '#tour-step-scenarios', text: 'Use these presets to quickly load different test cases, like text with hallucinations or omissions, to see the impact on LAS.', position: 'left' }
+            ],
+
+            start: function() {
+                this.isActive = true;
+                this.currentStep = 0;
+                this.overlay.style.pointerEvents = 'auto';
+                this.overlay.style.opacity = '1';
+                this.showStep();
+            },
+
+            next: function() {
+                this.cleanupCurrentStep();
+                this.currentStep++;
+                if (this.currentStep < this.steps.length) {
+                    setTimeout(() => this.showStep(), 400);
+                } else {
+                    this.end();
+                }
+            },
+            
+            showStep: function() {
+                const step = this.steps[this.currentStep];
+                const targetElement = document.querySelector(step.selector);
+                if (!targetElement) { this.end(); return; }
+
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+
+                setTimeout(() => {
+                    targetElement.classList.add('tour-highlight');
+                    
+                    const callout = document.createElement('div');
+                    callout.id = 'tour-callout';
+                    callout.innerHTML = `<p class="text-sm mb-4">${step.text}</p><div class="flex justify-end"><button onclick="tourManager.next()">Next &rarr;</button></div>`;
+                    document.body.appendChild(callout);
+                    
+                    const targetRect = targetElement.getBoundingClientRect();
+                    const calloutRect = callout.getBoundingClientRect();
+                    const margin = 15;
+
+                    const scrollY = window.scrollY || document.documentElement.scrollTop;
+                    const scrollX = window.scrollX || document.documentElement.scrollLeft;
+
+                    let top, left;
+
+                    switch (step.position) {
+                        case 'bottom':
+                            top = targetRect.bottom + scrollY + margin;
+                            left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2);
+                            break;
+                        case 'top':
+                            top = targetRect.top + scrollY - calloutRect.height - margin;
+                            left = targetRect.left + scrollX + (targetRect.width / 2) - (calloutRect.width / 2);
+                            break;
+                        case 'left':
+                            top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2);
+                            left = targetRect.left + scrollX - calloutRect.width - margin;
+                            break;
+                        case 'right':
+                            top = targetRect.top + scrollY + (targetRect.height / 2) - (calloutRect.height / 2);
+                            left = targetRect.right + scrollX + margin;
+                            break;
+                        default:
+                            top = targetRect.bottom + scrollY + margin;
+                            left = targetRect.left + scrollX;
+                    }
+                    
+                    const viewportRight = scrollX + window.innerWidth;
+                    const viewportBottom = scrollY + window.innerHeight;
+
+                    if (left < scrollX + margin) left = scrollX + margin;
+                    if (left + calloutRect.width > viewportRight - margin) left = viewportRight - calloutRect.width - margin;
+                    if (top < scrollY + margin) top = scrollY + margin;
+                    if (top + calloutRect.height > viewportBottom - margin) top = viewportBottom - calloutRect.height - margin;
+                    
+                    callout.style.top = `${top}px`;
+                    callout.style.left = `${left}px`;
+
+                    requestAnimationFrame(() => {
+                        callout.classList.add('visible');
+                    });
+                }, 350);
+            },
+            
+            cleanupCurrentStep: function() {
+                const oldHighlight = document.querySelector('.tour-highlight');
+                if (oldHighlight) oldHighlight.classList.remove('tour-highlight');
+                const oldCallout = document.getElementById('tour-callout');
+                if (oldCallout) oldCallout.remove();
+            },
+
+            end: function() {
+                this.cleanupCurrentStep();
+                this.isActive = false;
+                this.overlay.style.opacity = '0';
+                setTimeout(() => this.overlay.style.pointerEvents = 'none', 400);
+            }
+        };
+
+        // --- Dynamic Background ---
+        function updateDynamicBackground(f1Score) {
+            const score = isNaN(f1Score) ? 0 : f1Score;
+            const hue = 120 * score;
+            const saturation = 30 + 40 * score;
+            const lightness = 85 + 10 * score;
+            const startColor = `hsl(170, ${saturation-10}%, ${lightness-5}%)`;
+            const endColor = `hsl(190, ${saturation}%, ${lightness}%)`;
+            if(appBackground) {
+                appBackground.style.background = `linear-gradient(135deg, ${startColor} 0%, ${endColor} 100%)`;
+            }
+        }
+
+        // --- Scenario & State Management ---
+        function resetToFullScenario() {
+            activeReferenceIndices = Array.from({ length: MASTER_NUM_UNITS_Y }, (_, i) => i);
+            activeGeneratedIndices = Array.from({ length: MASTER_NUM_UNITS_X }, (_, i) => i);
+            updateDynamicStateAndRender();
+            showGuidingCue("Everything is reset. Try a scenario or click a chunk to get started!");
+        }
+
+        function simulateOmissions() {
+            activeReferenceIndices = Array.from({ length: MASTER_NUM_UNITS_Y }, (_, i) => i);
+            activeGeneratedIndices = [0, 1, 3, 4, 6, 7]; // Deactivate some generated chunks
+            updateDynamicStateAndRender();
+            showGuidingCue("Omissions lower Precision. Now <strong>try 'Hallucination'</strong> to see how Recall is affected.");
+        }
+
+        function simulateHallucination() {
+            activeReferenceIndices = [0, 1, 2, 4, 5, 7, 8]; // Deactivate some reference chunks
+            activeGeneratedIndices = Array.from({ length: MASTER_NUM_UNITS_X }, (_, i) => i);
+            updateDynamicStateAndRender();
+            showGuidingCue("Hallucinations lower Recall. Next, <strong>try 'Misalignment'</strong> to see a different error type.");
+        }
+
+        function simulateMisalignment() {
+            activeReferenceIndices = Array.from({ length: MASTER_NUM_UNITS_Y }, (_, i) => i);
+            let jumbledGen = Array.from({ length: MASTER_NUM_UNITS_X }, (_, i) => i);
+            // Fisher-Yates Shuffle to jumble the generated chunks order
+            for (let i = jumbledGen.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [jumbledGen[i], jumbledGen[j]] = [jumbledGen[j], jumbledGen[i]];
+            }
+            activeGeneratedIndices = jumbledGen;
+            updateDynamicStateAndRender();
+            showGuidingCue("Misalignment hurts both scores! <strong>Click 'Reset Full'</strong> to explore on your own.");
+        }
+
+        function toggleChunkActiveState(type, originalIndex) {
+            let activeIndicesArray = (type === 'reference') ? activeReferenceIndices : activeGeneratedIndices;
+            const minChunks = 1;
+            const currentIndexPositionInActive = activeIndicesArray.indexOf(originalIndex);
+
+            if (currentIndexPositionInActive > -1) {
+                // If it's active, deactivate it by removing it from the array.
+                if (activeIndicesArray.length > minChunks) {
+                    activeIndicesArray.splice(currentIndexPositionInActive, 1);
+                } else {
+                    return; // Prevent deactivating the last active chunk.
+                }
+            } else {
+                // If it's inactive, reactivate it by adding it back.
+                activeIndicesArray.push(originalIndex);
+                activeIndicesArray.sort((a, b) => a - b);
+            }
+
+            manualClickCounter++;
+            if (manualClickCounter === 3) {
+                showGuidingCue("You've got the hang of it! Now <strong>try a 'Test Scenario'</strong> to see a pre-built example.");
+            }
+
+            updateDynamicStateAndRender();
+        }
+        
+        // --- Core Logic ---
+        function buildCurrentSimilarityMatrix() {
+            currentSimilarityMatrix = [];
+            if (currentNumUnitsY > 0 && currentNumUnitsX > 0) {
+                for (let i = 0; i < currentNumUnitsY; i++) {
+                    const original_r_idx = activeReferenceIndices[i];
+                    const newRow = [];
+                    for (let j = 0; j < currentNumUnitsX; j++) {
+                        const original_c_idx = activeGeneratedIndices[j];
+                        newRow.push(masterSimilarityValues[original_r_idx][original_c_idx]);
+                    }
+                    currentSimilarityMatrix.push(newRow);
+                }
+            }
+        }
+
+        function get_mapping_windows_js(lenA_active, lenB_active) {
+            const isALonger = lenA_active >= lenB_active;
+            const longerLen = isALonger ? lenA_active : lenB_active;
+            const shorterLen = isALonger ? lenB_active : lenA_active;
+            if (shorterLen === 0) return { precision_windows: Array(lenB_active).fill(null) };
+            const slope = longerLen / shorterLen;
+            const mappingWindowSize = Math.ceil(slope);
+            let direct_windows = [];
+            for (let i = 0; i < shorterLen; i++) {
+                const idx_point = i * slope;
+                const start = Math.max(Math.floor(idx_point), 0);
+                const end = Math.min(start + mappingWindowSize, longerLen);
+                direct_windows.push({ start: start, end: end });
+            }
+            let windows_for_B_items = [];
+            if (isALonger) {
+                windows_for_B_items = direct_windows;
+            } else {
+                for (let b_idx = 0; b_idx < lenB_active; b_idx++) {
+                    let mappedAIndices = [];
+                    direct_windows.forEach((a_window_on_b_axis, a_idx) => {
+                        if (b_idx >= a_window_on_b_axis.start && b_idx < a_window_on_b_axis.end) {
+                            mappedAIndices.push(a_idx);
+                        }
+                    });
+                    if (mappedAIndices.length > 0) {
+                        windows_for_B_items.push({ start: Math.min(...mappedAIndices), end: Math.max(...mappedAIndices) + 1 });
+                    } else {
+                        const proportionalAPos = Math.floor((b_idx / lenB_active) * lenA_active);
+                        windows_for_B_items.push({ start: proportionalAPos, end: Math.min(proportionalAPos + 1, lenA_active) });
+                    }
+                }
+            }
+            if (windows_for_B_items.length !== lenB_active) {
+                const filled_windows = Array(lenB_active).fill(null);
+                for(let i=0; i < Math.min(lenB_active, windows_for_B_items.length); i++) {
+                    filled_windows[i] = windows_for_B_items[i];
+                }
+                return { precision_windows: filled_windows };
+            }
+            return { precision_windows: windows_for_B_items };
+        }
+
+        function findBestMatchWithContextJS(similarityArray, mappingWindow, cutoff, ctrl) {
+            let maxVal = -Infinity; let maxIdx = -1;
+            if (!similarityArray || similarityArray.length === 0) return { bestMatchIndex: -1, maxSimilarityIndex: -1, maxSimilarityValue: -Infinity, contextWindowApplied: false, calculatedContextWindow: 0 };
+            similarityArray.forEach((val, idx) => { if (val > maxVal) { maxVal = val; maxIdx = idx; } });
+            if (maxIdx === -1) return { bestMatchIndex: -1, maxSimilarityIndex: -1, maxSimilarityValue: maxVal, contextWindowApplied: false, calculatedContextWindow: 0 };
+            const contextRange = 1 - cutoff;
+            const contextWindowApplied = maxVal > 0 && (contextRange - (1 - maxVal)) > 0;
+            const contextValueDrop = (contextWindowApplied && maxVal !== 0) ? ((contextRange - (1 - maxVal)) / maxVal) / ctrl : 0.0;
+            const contextThreshold = maxVal - contextValueDrop;
+            const calculatedCtxWindowForDisplay = contextValueDrop;
+            const candidateIndices = []; const candidateValues = [];
+            similarityArray.forEach((val, idx) => { if (val >= contextThreshold) { candidateIndices.push(idx); candidateValues.push(val); } });
+            let bestMatchIndexToReturn = maxIdx;
+            if (candidateIndices.length === 0) { bestMatchIndexToReturn = maxIdx; }
+            else if (candidateIndices.length === 1 || !mappingWindow || typeof mappingWindow.start === 'undefined' || typeof mappingWindow.end === 'undefined') { bestMatchIndexToReturn = candidateIndices.length === 1 ? candidateIndices[0] : maxIdx; }
+            else {
+                const { start, end } = mappingWindow; let distances = [];
+                candidateIndices.forEach(candIdx => {
+                    const isInWin = candIdx >= start && candIdx < end;
+                    if (isInWin) { distances.push(0); } else { const leftDist = Math.max(start - candIdx, 0); const rightDist = Math.max(candIdx - (end - 1), 0); distances.push(Math.max(leftDist, rightDist)); }
+                });
+                let minDistance = Infinity; let highestSimilarityInMinDistanceGroup = -Infinity; bestMatchIndexToReturn = -1;
+                for (let i = 0; i < candidateIndices.length; i++) {
+                    const currentCandOriginalIndex = candidateIndices[i]; const currentCandSimilarity = candidateValues[i]; const currentDistance = distances[i];
+                    if (currentDistance < minDistance) { minDistance = currentDistance; highestSimilarityInMinDistanceGroup = currentCandSimilarity; bestMatchIndexToReturn = currentCandOriginalIndex; }
+                    else if (currentDistance === minDistance) { if (currentCandSimilarity > highestSimilarityInMinDistanceGroup) { highestSimilarityInMinDistanceGroup = currentCandSimilarity; bestMatchIndexToReturn = currentCandOriginalIndex; } }
+                }
+                if (bestMatchIndexToReturn === -1) bestMatchIndexToReturn = maxIdx;
+            }
+            return { bestMatchIndex: bestMatchIndexToReturn, maxSimilarityIndex: maxIdx, maxSimilarityValue: maxVal, contextWindowApplied: contextWindowApplied, calculatedContextWindow: calculatedCtxWindowForDisplay };
+        }
+
+        function calculateAndDisplayLAS() {
+            if (!currentSimilarityMatrix || currentNumUnitsX === 0 || currentNumUnitsY === 0) {
+                precisionLASDisplay.textContent = "0.000"; recallLASDisplay.textContent = "0.000"; f1LASDisplay.textContent = "0.000"; return;
+            }
+            let precisionMatchScores = [];
+            for (let c_active_idx = 0; c_active_idx < currentNumUnitsX; c_active_idx++) {
+                const columnSimilarity = currentSimilarityMatrix.map(row => row[c_active_idx]);
+                const mappingWindow = currentPrecisionWindows[c_active_idx];
+                if (!mappingWindow || typeof mappingWindow.start === 'undefined') continue;
+                const matchInfo = findBestMatchWithContextJS(columnSimilarity, mappingWindow, contextCutoffValue, contextWindowCtrl);
+                if (matchInfo.bestMatchIndex !== -1 && matchInfo.bestMatchIndex < currentNumUnitsY) {
+                    precisionMatchScores.push(currentSimilarityMatrix[matchInfo.bestMatchIndex][c_active_idx]);
+                }
+            }
+            let recallMatchScores = [];
+            for (let r_active_idx = 0; r_active_idx < currentNumUnitsY; r_active_idx++) {
+                const rowSimilarity = currentSimilarityMatrix[r_active_idx];
+                const mappingWindow = currentRecallWindows[r_active_idx];
+                if (!mappingWindow || typeof mappingWindow.start === 'undefined') continue;
+                const matchInfo = findBestMatchWithContextJS(rowSimilarity, mappingWindow, contextCutoffValue, contextWindowCtrl);
+                if (matchInfo.bestMatchIndex !== -1 && matchInfo.bestMatchIndex < currentNumUnitsX) {
+                    recallMatchScores.push(currentSimilarityMatrix[r_active_idx][matchInfo.bestMatchIndex]);
+                }
+            }
+            const precisionLAS = precisionMatchScores.length > 0 ? precisionMatchScores.reduce((a, b) => a + b, 0) / precisionMatchScores.length : 0.0;
+            const recallLAS = recallMatchScores.length > 0 ? recallMatchScores.reduce((a, b) => a + b, 0) / recallMatchScores.length : 0.0;
+            const f1LAS = _calculate_f1(precisionLAS, recallLAS);
+            
+            animateNumber(precisionLASDisplay, precisionLASGhost, parseFloat(precisionLASDisplay.textContent)||0, precisionLAS, 500);
+            animateNumber(recallLASDisplay, recallLASGhost, parseFloat(recallLASDisplay.textContent)||0, recallLAS, 500);
+            animateNumber(f1LASDisplay, f1LASGhost, parseFloat(f1LASDisplay.textContent)||0, f1LAS, 500);
+            
+            updateDynamicBackground(f1LAS);
+        }
+
+        // --- Render Functions ---
+        function renderSegmentLists() {
+            activeRefChunkCountSpan.textContent = activeReferenceIndices.length;
+            totalRefChunkCountSpan.textContent = MASTER_NUM_UNITS_Y;
+            activeGenChunkCountSpan.textContent = activeGeneratedIndices.length;
+            totalGenChunkCountSpan.textContent = MASTER_NUM_UNITS_X;
+
+            function populateList(ul, masterChunks, activeIndices, type) {
+                ul.innerHTML = '';
+                const activeSet = new Set(activeIndices);
+                const allItems = masterChunks.map((chunk, originalIndex) => {
+                    const li = document.createElement('li');
+                    li.dataset.originalIndex = originalIndex;
+                    li.dataset.chunkType = type;
+                    li.innerHTML = `<span>${type === 'reference' ? 'Ref' : 'Gen'} ${originalIndex}: ${chunk}</span>`;
+                    li.addEventListener('click', () => toggleChunkActiveState(type, originalIndex));
+                    return { li, originalIndex, isActive: activeSet.has(originalIndex) };
+                });
+                activeIndices.forEach(activeIndex => {
+                    const item = allItems.find(it => it.originalIndex === activeIndex);
+                    if (item) ul.appendChild(item.li);
+                });
+                allItems.forEach(item => {
+                    if (!item.isActive) {
+                        item.li.classList.add('inactive-chunk');
+                        ul.appendChild(item.li);
+                    }
+                });
+            }
+            populateList(referenceSegmentsUl, masterReferenceChunks, activeReferenceIndices, 'reference');
+            populateList(generatedSegmentsUl, masterGeneratedChunks, activeGeneratedIndices, 'generated');
+        }
+
+        function updateGridBackground() {
+            if (currentNumUnitsX === 0 || currentNumUnitsY === 0) { chartGrid.style.backgroundImage = 'none'; return; }
+            chartGrid.style.backgroundImage = `linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)`;
+            chartGrid.style.backgroundSize = `calc(100% / ${currentNumUnitsX}) calc(100% / ${currentNumUnitsY})`;
+        }
+
+        function renderIdealMappingWindows() {
+            idealMappingContainer.innerHTML = '';
+            if (!currentPrecisionWindows || currentNumUnitsX === 0 || currentNumUnitsY === 0) return;
+            currentPrecisionWindows.forEach((window, gen_chunk_active_idx) => {
+                if (gen_chunk_active_idx >= currentNumUnitsX || !window || typeof window.start === 'undefined') return;
+                const idealWindowDiv = document.createElement('div'); idealWindowDiv.classList.add('ideal-mapping-window');
+                idealWindowDiv.style.left = `calc(${gen_chunk_active_idx} * 100% / ${currentNumUnitsX})`;
+                idealWindowDiv.style.width = `calc(100% / ${currentNumUnitsX})`;
+                idealWindowDiv.style.bottom = `calc(${window.start} * 100% / ${currentNumUnitsY})`;
+                const windowHeight = Math.max(0, window.end - window.start);
+                idealWindowDiv.style.height = `calc(${windowHeight} * 100% / ${currentNumUnitsY})`;
+                idealMappingContainer.appendChild(idealWindowDiv);
+            });
+        }
+
+        function renderSimilarityValues() {
+            const container = similarityValueContainer;
+            container.innerHTML = '';
+            if (!currentSimilarityMatrix || currentNumUnitsX === 0 || currentNumUnitsY === 0) { container.style.display = 'none'; return; }
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = `repeat(${currentNumUnitsX}, 1fr)`;
+            container.style.gridTemplateRows = `repeat(${currentNumUnitsY}, 1fr)`;
+            container.style.position = 'absolute'; container.style.inset = '0'; container.style.zIndex = '4';
+            for (let r_active_idx = 0; r_active_idx < currentNumUnitsY; r_active_idx++) {
+                for (let c_active_idx = 0; c_active_idx < currentNumUnitsX; c_active_idx++) {
+                    const displayCell = document.createElement('div');
+                    displayCell.classList.add('similarity-display-cell');
+                    displayCell.textContent = currentSimilarityMatrix[r_active_idx][c_active_idx].toFixed(2);
+                    container.appendChild(displayCell);
+                }
+            }
+        }
+
+        function renderBestMatches() { 
+            bestMatchHighlightContainer.innerHTML = '';
+            if (!currentSimilarityMatrix || currentNumUnitsX === 0 || currentNumUnitsY === 0 || !currentPrecisionWindows) return;
+            for (let c_active_idx = 0; c_active_idx < currentNumUnitsX; c_active_idx++) { 
+                const columnSimilarity = currentSimilarityMatrix.map(row => row[c_active_idx]);
+                const mappingWindow = currentPrecisionWindows[c_active_idx]; 
+                if (!mappingWindow || typeof mappingWindow.start === 'undefined') continue;
+                const matchInfo = findBestMatchWithContextJS(columnSimilarity, mappingWindow, contextCutoffValue, contextWindowCtrl);
+                if (matchInfo.bestMatchIndex !== -1 && matchInfo.bestMatchIndex < currentNumUnitsY) {
+                    const highlightCell = document.createElement('div'); highlightCell.classList.add('best-match-cell');
+                    highlightCell.style.width = `calc(100% / ${currentNumUnitsX})`; highlightCell.style.height = `calc(100% / ${currentNumUnitsY})`;
+                    highlightCell.style.left = `calc(${c_active_idx} * 100% / ${currentNumUnitsX})`;
+                    highlightCell.style.bottom = `calc(${matchInfo.bestMatchIndex} * 100% / ${currentNumUnitsY})`;
+                    bestMatchHighlightContainer.appendChild(highlightCell);
+                }
+            }
+        }
+
+        function renderMaxSimilarityHighlights() { 
+            maxSimilarityHighlightContainer.innerHTML = '';
+            if (!currentSimilarityMatrix || currentNumUnitsX === 0 || currentNumUnitsY === 0 || !currentPrecisionWindows) return;
+            for (let c_active_idx = 0; c_active_idx < currentNumUnitsX; c_active_idx++) {
+                const columnSimilarity = currentSimilarityMatrix.map(row => row[c_active_idx]);
+                const mappingWindow = currentPrecisionWindows[c_active_idx];
+                if (!mappingWindow || typeof mappingWindow.start === 'undefined') continue;
+                const matchInfo = findBestMatchWithContextJS(columnSimilarity, mappingWindow, contextCutoffValue, contextWindowCtrl);
+                if (matchInfo.maxSimilarityIndex !== -1 && matchInfo.maxSimilarityIndex < currentNumUnitsY && matchInfo.maxSimilarityIndex !== matchInfo.bestMatchIndex) {
+                    const highlightCell = document.createElement('div'); highlightCell.classList.add('max-similarity-cell-highlight');
+                    highlightCell.style.width = `calc(100% / ${currentNumUnitsX})`; highlightCell.style.height = `calc(100% / ${currentNumUnitsY})`;
+                    highlightCell.style.left = `calc(${c_active_idx} * 100% / ${currentNumUnitsX})`;
+                    highlightCell.style.bottom = `calc(${matchInfo.maxSimilarityIndex} * 100% / ${currentNumUnitsY})`;
+                    const contextText = document.createElement('span'); contextText.classList.add('context-window-text');
+                    contextText.textContent = `CW: ${matchInfo.calculatedContextWindow.toFixed(3)}`;
+                    highlightCell.appendChild(contextText); maxSimilarityHighlightContainer.appendChild(highlightCell);
+                }
+            }
+        }
+
+        function renderAxisLabels() {
+            axisLabelContainerX.innerHTML = ''; axisLabelContainerY.innerHTML = '';
+            if (currentNumUnitsX === 0 && currentNumUnitsY === 0) return;
+            if (currentNumUnitsY > 0) {
+                const maxGridIndexY = currentNumUnitsY - 1; 
+                const yStep = Math.max(1, Math.floor(currentNumUnitsY / 10)) || 1;
+                for (let i = 0; i <= maxGridIndexY; i += yStep) {
+                    const tL = document.createElement('div'); tL.classList.add('axis-label'); tL.textContent = activeReferenceIndices[i]; 
+                    tL.style.left = '-1rem'; tL.style.top = `calc(100% - (${i}*100%/${currentNumUnitsY}) - (50%/${currentNumUnitsY}))`;
+                    tL.style.transform = 'translateY(-50%) translateX(-100%)'; axisLabelContainerY.appendChild(tL);
+                }
+                if (maxGridIndexY > 0 && (maxGridIndexY % yStep !== 0)) {
+                     const tL = document.createElement('div'); tL.classList.add('axis-label'); tL.textContent = activeReferenceIndices[maxGridIndexY];
+                     tL.style.left = '-1rem'; tL.style.top = `calc(100% - (${maxGridIndexY}*100%/${currentNumUnitsY}) - (50%/${currentNumUnitsY}))`;
+                     tL.style.transform = 'translateY(-50%) translateX(-100%)'; axisLabelContainerY.appendChild(tL);
+                }
+            }
+            if (currentNumUnitsX > 0) {
+                const maxGridIndexX = currentNumUnitsX - 1; 
+                const xStep = Math.max(1, Math.floor(currentNumUnitsX / 10)) || 1;
+                for (let i = 0; i <= maxGridIndexX; i += xStep) {
+                    const tL = document.createElement('div'); tL.classList.add('axis-label'); tL.textContent = activeGeneratedIndices[i]; 
+                    tL.style.bottom = '-1.5rem'; tL.style.left = `calc(${i}*100%/${currentNumUnitsX} + 50%/${currentNumUnitsX})`;
+                    tL.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(tL);
+                }
+                 if (maxGridIndexX > 0 && (maxGridIndexX % xStep !== 0)) {
+                    const tL = document.createElement('div'); tL.classList.add('axis-label'); tL.textContent = activeGeneratedIndices[maxGridIndexX];
+                    tL.style.bottom = '-1.5rem'; tL.style.left = `calc(${maxGridIndexX}*100%/${currentNumUnitsX} + 50%/${currentNumUnitsX})`;
+                    tL.style.transform = 'translateX(-50%)'; axisLabelContainerX.appendChild(tL);
+                 }
+            }
+        }
+
+        function animateNumber(el, ghostEl, start, end, duration = 500) {
+            if (ghostEl) {
+                ghostEl.textContent = start.toFixed(3);
+                ghostEl.classList.remove('visible'); // Reset animation
+                void ghostEl.offsetWidth; // Trigger reflow
+                ghostEl.classList.add('visible');
+                setTimeout(() => {
+                    ghostEl.classList.remove('visible');
+                }, duration);
+            }
+
+            if (Math.abs(end - start) < 0.001) { el.textContent = end.toFixed(3); return; } 
+            const frame = (ct) => { 
+                const elapsed = ct - st; 
+                const rawProgress = Math.min(elapsed / duration, 1); 
+                const progress = easeOutCubic(rawProgress); 
+                const current = start + (end - start) * progress; 
+                el.textContent = current.toFixed(3); 
+                if (rawProgress < 1) requestAnimationFrame(frame); 
+            }; 
+            const st = performance.now(); 
+            requestAnimationFrame(frame); 
+        };
+        
+        // --- Main Update & Render Orchestrator ---
+        function updateDynamicStateAndRender() {
+            currentNumUnitsY = activeReferenceIndices.length;
+            currentNumUnitsX = activeGeneratedIndices.length;
+
+            contextCutoffDisplay.textContent = contextCutoffValue.toFixed(2); 
+            contextWindowCtrlDisplay.textContent = contextWindowCtrl.toFixed(1); 
+
+            buildCurrentSimilarityMatrix();
+            renderSegmentLists(); 
+
+            currentPrecisionWindows = get_mapping_windows_js(currentNumUnitsY, currentNumUnitsX).precision_windows;
+            currentRecallWindows = get_mapping_windows_js(currentNumUnitsX, currentNumUnitsY).precision_windows;
+
+            updateGridBackground(); 
+            renderSimilarityValues(); 
+            renderIdealMappingWindows(); 
+            renderBestMatches(); 
+            renderMaxSimilarityHighlights(); 
+            renderAxisLabels(); 
+            calculateAndDisplayLAS(); 
+        }
+
+        // --- Initial Load ---
+        window.addEventListener('load', () => {
+            document.getElementById('start-tour-btn').addEventListener('click', () => tourManager.start());
+            resetToFullScenario();
+        });
+    </script>
+</body>
+</html>
