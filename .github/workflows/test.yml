@@ -31,24 +31,44 @@ jobs:
     
     - name: Run tests
       run: |
-        # Test basic package functionality without requiring embedding functions
-        echo "Testing package structure and imports..."
+        # Test package build and all public APIs
+        echo "Testing package structure and public APIs..."
         
         # Test basic package import and version
         python -c "import vcs; print(f'✅ VCS version: {vcs.__version__}')"
         
-        # Test core imports
-        python -c "from vcs import compute_vcs_score; print('✅ Main function importable')"
-        python -c "from vcs._config import DEFAULT_CONTEXT_CUTOFF_VALUE; print('✅ Config module imports')"
-        python -c "from vcs._utils._utils import _calculate_f1; print('✅ Utilities module imports')"
+        # Test all public APIs dynamically from __all__
+        python << 'EOF'
+        import vcs
+        print('Testing all public APIs from __all__...')
+        failed_imports = []
+        for api_name in vcs.__all__:
+            try:
+                getattr(vcs, api_name)
+                print(f'✅ {api_name}')
+            except Exception as e:
+                failed_imports.append((api_name, str(e)))
+                print(f'❌ {api_name}: {e}')
         
-        # Test configuration validation
-        python -c "from vcs._config import DEFAULT_CONTEXT_CUTOFF_VALUE; assert 0 < DEFAULT_CONTEXT_CUTOFF_VALUE < 1; print('✅ Config values are valid')"
+        if failed_imports:
+            print(f'Failed to import {len(failed_imports)} APIs')
+            exit(1)
+        else:
+            print(f'✅ All {len(vcs.__all__)} public APIs importable')
+        EOF
         
-        # Test utility functions
-        python -c "from vcs._utils._utils import _calculate_f1; assert _calculate_f1(1.0, 1.0) == 1.0; assert _calculate_f1(0.0, 1.0) == 0.0; print('✅ Utility functions work')"
+        # Test exact configuration values
+        python << 'EOF'
+        import vcs
+        print('Testing configuration constants...')
+        assert vcs.DEFAULT_LCT == 0, f'LCT should be 0, got {vcs.DEFAULT_LCT}'
+        assert vcs.DEFAULT_CONTEXT_CUTOFF_VALUE == 0.6, f'Context cutoff should be 0.6, got {vcs.DEFAULT_CONTEXT_CUTOFF_VALUE}'
+        assert vcs.DEFAULT_CONTEXT_WINDOW_CONTROL == 4.0, f'Context window control should be 4.0, got {vcs.DEFAULT_CONTEXT_WINDOW_CONTROL}'
+        assert vcs.DEFAULT_CHUNK_SIZE == 1, f'Chunk size should be 1, got {vcs.DEFAULT_CHUNK_SIZE}'
+        print('✅ All configuration values are correct')
+        EOF
         
-        echo "✅ All basic functionality tests passed"
+        echo "✅ All package tests passed"
     
     - name: Lint with flake8
       run: |
