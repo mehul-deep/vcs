@@ -69,81 +69,71 @@ jobs:
         EOF
         
         # Test quickstart example from README with dynamic dependency installation
-        python -c "
-import subprocess
-import sys
-import re
-
-print('Testing quickstart example from README...')
-
-# Read README to extract example
-try:
-    with open('README.md', 'r') as f:
-        readme_content = f.read()
-    print('✅ README.md found')
-except FileNotFoundError:
-    print('❌ README.md not found')
-    exit(1)
-
-# Install dependencies as quickstart example would
-print('Installing dependencies as needed...')
-try:
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'sentence-transformers', 'nltk'], 
-                         capture_output=True)
-    print('✅ Dependencies installed')
-except subprocess.CalledProcessError as e:
-    print(f'❌ Failed to install dependencies: {e}')
-    exit(1)
-
-# Execute quickstart example
-try:
-    import torch
-    import nltk
-    from sentence_transformers import SentenceTransformer
-    from vcs import compute_vcs_score
-    
-    # Download NLTK data quietly
-    nltk.download('punkt', quiet=True)
-    
-    # Use quickstart example code from README
-    def simple_segmenter(text):
-        return [s.strip() for s in text.split('.') if s.strip()]
-    
-    def embedding_function(texts):
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        embeddings = model.encode(texts)
-        return torch.tensor(embeddings)
-    
-    # Test data from README
-    reference_text = \"The cat sat on the mat. It was a sunny day.\"
-    generated_text = \"A cat was sitting on a mat. The weather was nice.\"
-    
-    result = compute_vcs_score(
-        reference_text=reference_text,
-        generated_text=generated_text,
-        segmenter_fn=simple_segmenter,
-        embedding_fn_las=embedding_function,
-        embedding_fn_gas=embedding_function,
-        return_all_metrics=True
-    )
-    
-    # Validate results
-    required_keys = ['VCS', 'GAS', 'LAS', 'NAS']
-    for key in required_keys:
-        assert key in result, f'Missing key: {key}'
-        assert isinstance(result[key], (int, float)), f'{key} should be numeric'
-        assert 0 <= result[key] <= 1, f'{key} should be between 0 and 1, got {result[key]}'
-    
-    print(f'🎯 VCS Score: {result[\"VCS\"]:.4f}')
-    print(f'🌍 GAS Score: {result[\"GAS\"]:.4f}')
-    print(f'🎯 LAS Score: {result[\"LAS\"]:.4f}')
-    print(f'📖 NAS Score: {result[\"NAS\"]:.4f}')
-    print('✅ Quickstart example works correctly!')
-    
-except Exception as e:
-    print(f'❌ Quickstart example failed: {e}')
-    exit(1)
-"
+        python << 'EOF'
+        import subprocess
+        import sys
+        
+        print('Testing quickstart example from README...')
+        
+        # Install dependencies as quickstart example would
+        print('Installing dependencies as needed...')
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'sentence-transformers', 'nltk'], 
+                                 capture_output=True)
+            print('✅ Dependencies installed')
+        except subprocess.CalledProcessError as e:
+            print(f'❌ Failed to install dependencies: {e}')
+            exit(1)
+        
+        # Execute quickstart example
+        try:
+            import torch
+            import nltk
+            from sentence_transformers import SentenceTransformer
+            from vcs import compute_vcs_score
+            
+            # Download NLTK data quietly
+            nltk.download('punkt', quiet=True)
+            
+            # Use quickstart example code from README
+            def simple_segmenter(text):
+                return [s.strip() for s in text.split('.') if s.strip()]
+            
+            def embedding_function(texts):
+                model = SentenceTransformer('all-MiniLM-L6-v2')
+                embeddings = model.encode(texts)
+                return torch.tensor(embeddings)
+            
+            # Test data from README
+            reference_text = "The cat sat on the mat. It was a sunny day."
+            generated_text = "A cat was sitting on a mat. The weather was nice."
+            
+            result = compute_vcs_score(
+                reference_text=reference_text,
+                generated_text=generated_text,
+                segmenter_fn=simple_segmenter,
+                embedding_fn_las=embedding_function,
+                embedding_fn_gas=embedding_function,
+                return_all_metrics=True
+            )
+            
+            # Validate results
+            required_keys = ['VCS', 'GAS', 'LAS', 'NAS']
+            for key in required_keys:
+                assert key in result, f'Missing key: {key}'
+                assert isinstance(result[key], (int, float)), f'{key} should be numeric'
+                assert 0 <= result[key] <= 1, f'{key} should be between 0 and 1, got {result[key]}'
+            
+            print(f'🎯 VCS Score: {result["VCS"]:.4f}')
+            print(f'🌍 GAS Score: {result["GAS"]:.4f}')
+            print(f'🎯 LAS Score: {result["LAS"]:.4f}')
+            print(f'📖 NAS Score: {result["NAS"]:.4f}')
+            print('✅ Quickstart example works correctly!')
+            
+        except Exception as e:
+            print(f'❌ Quickstart example failed: {e}')
+            exit(1)
+        EOF
         
         echo "✅ All package tests passed"
     
