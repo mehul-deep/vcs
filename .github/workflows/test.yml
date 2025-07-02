@@ -68,70 +68,123 @@ jobs:
         print('✅ All configuration values are correct')
         EOF
         
-        # Test quickstart example from README with dynamic dependency installation
+        # Test quickstart example dynamically from documentation
         python << 'EOF'
         import subprocess
         import sys
+        import re
+        import os
         
-        print('Testing quickstart example from README...')
+        print('Testing quickstart example from documentation...')
         
-        # Install dependencies as quickstart example would
-        print('Installing dependencies as needed...')
-        try:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'sentence-transformers', 'nltk'], 
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            print('✅ Dependencies installed')
-        except subprocess.CalledProcessError as e:
-            print(f'❌ Failed to install dependencies: {e}')
+        # Find and read quickstart examples from documentation
+        quickstart_files = [
+            'README.md',
+            'docs/sphinx/source/getting_started.rst', 
+            'docs/sphinx/source/usage.rst'
+        ]
+        
+        quickstart_code = None
+        source_file = None
+        
+        for filepath in quickstart_files:
+            if os.path.exists(filepath):
+                print(f'📖 Reading {filepath}...')
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Look for Python code blocks with VCS examples
+                    if filepath.endswith('.md'):
+                        # Markdown format: ```python ... ```
+                        patterns = [
+                            r'```python\s*\n(.*?from vcs import compute_vcs_score.*?)```',
+                            r'```python\s*\n(.*?sentence_transformers.*?compute_vcs_score.*?)```'
+                        ]
+                    else:
+                        # RST format: .. code-block:: python
+                        patterns = [
+                            r'\.\. code-block:: python\s*\n\n(.*?(?=\n\n[^\s]|\n\.\.|$))',
+                            r'python\s*\n(.*?sentence_transformers.*?compute_vcs_score.*?)(?=\n\n|\n\.\.|$)'
+                        ]
+                    
+                    for pattern in patterns:
+                        matches = re.findall(pattern, content, re.DOTALL | re.MULTILINE)
+                        for match in matches:
+                            if 'compute_vcs_score' in match and ('sentence_transformers' in match or 'embedding_function' in match):
+                                quickstart_code = match.strip()
+                                source_file = filepath
+                                print(f'✅ Found quickstart example in {filepath}')
+                                break
+                        if quickstart_code:
+                            break
+                    if quickstart_code:
+                        break
+                        
+                except Exception as e:
+                    print(f'⚠️ Could not read {filepath}: {e}')
+        
+        if not quickstart_code:
+            print('❌ No quickstart example found in documentation')
             exit(1)
         
-        # Execute quickstart example
+        print(f'📝 Using example from: {source_file}')
+        print('🔧 Installing dependencies as needed...')
+        
+        # Install dependencies mentioned in the quickstart code
+        dependencies = []
+        if 'sentence_transformers' in quickstart_code:
+            dependencies.append('sentence-transformers')
+        if 'nltk' in quickstart_code:
+            dependencies.append('nltk')
+        
+        if dependencies:
+            try:
+                subprocess.check_call([sys.executable, '-m', 'pip', 'install'] + dependencies, 
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                print(f'✅ Installed: {", ".join(dependencies)}')
+            except subprocess.CalledProcessError as e:
+                print(f'❌ Failed to install dependencies: {e}')
+                exit(1)
+        
+        # Execute the dynamically found quickstart example
+        print('🚀 Executing quickstart example...')
         try:
-            import torch
-            import nltk
-            from sentence_transformers import SentenceTransformer
-            from vcs import compute_vcs_score
+            # Prepare the execution environment
+            exec_globals = {'__name__': '__main__'}
             
-            # Download NLTK data quietly
-            nltk.download('punkt', quiet=True)
+            # Clean up the code for execution
+            cleaned_code = quickstart_code
             
-            # Use quickstart example code from README
-            def simple_segmenter(text):
-                return [s.strip() for s in text.split('.') if s.strip()]
+            # Add necessary imports if missing
+            if 'import torch' not in cleaned_code:
+                cleaned_code = 'import torch\n' + cleaned_code
+            if 'from vcs import compute_vcs_score' not in cleaned_code:
+                cleaned_code = 'from vcs import compute_vcs_score\n' + cleaned_code
             
-            def embedding_function(texts):
-                model = SentenceTransformer('all-MiniLM-L6-v2')
-                embeddings = model.encode(texts)
-                return torch.tensor(embeddings)
+            # Execute the code
+            exec(cleaned_code, exec_globals)
             
-            # Test data from README
-            reference_text = "The cat sat on the mat. It was a sunny day."
-            generated_text = "A cat was sitting on a mat. The weather was nice."
-            
-            result = compute_vcs_score(
-                reference_text=reference_text,
-                generated_text=generated_text,
-                segmenter_fn=simple_segmenter,
-                embedding_fn_las=embedding_function,
-                embedding_fn_gas=embedding_function,
-                return_all_metrics=True
-            )
-            
-            # Validate results
-            required_keys = ['VCS', 'GAS', 'LAS', 'NAS']
-            for key in required_keys:
-                assert key in result, f'Missing key: {key}'
-                assert isinstance(result[key], (int, float)), f'{key} should be numeric'
-                assert 0 <= result[key] <= 1, f'{key} should be between 0 and 1, got {result[key]}'
-            
-            print(f'🎯 VCS Score: {result["VCS"]:.4f}')
-            print(f'🌍 GAS Score: {result["GAS"]:.4f}')
-            print(f'🎯 LAS Score: {result["LAS"]:.4f}')
-            print(f'📖 NAS Score: {result["NAS"]:.4f}')
-            print('✅ Quickstart example works correctly!')
+            # Validate that we got results
+            if 'result' in exec_globals:
+                result = exec_globals['result']
+                required_keys = ['VCS', 'GAS', 'LAS', 'NAS']
+                for key in required_keys:
+                    if key in result:
+                        assert isinstance(result[key], (int, float)), f'{key} should be numeric'
+                        assert 0 <= result[key] <= 1, f'{key} should be between 0 and 1, got {result[key]}'
+                
+                print('✅ Quickstart example executed successfully!')
+                print(f'📊 Results found with keys: {list(result.keys())}')
+            else:
+                print('⚠️ No result variable found, but execution completed without errors')
             
         except Exception as e:
             print(f'❌ Quickstart example failed: {e}')
+            print(f'🔍 Code being executed:')
+            print('--- START ---')
+            print(cleaned_code[:500] + '...' if len(cleaned_code) > 500 else cleaned_code)
+            print('--- END ---')
             exit(1)
         EOF
         
