@@ -111,12 +111,25 @@ jobs:
                     for pattern in patterns:
                         matches = re.findall(pattern, content, re.DOTALL | re.MULTILINE)
                         for match in matches:
-                            if 'compute_vcs_score' in match and ('sentence_transformers' in match or 'embedding_function' in match):
-                                quickstart_code = match.strip()
-                                source_file = filepath
-                                print(f'✅ Found quickstart example in {filepath}')
-                                break
-                        if quickstart_code:
+                            if 'compute_vcs_score' in match:
+                                # Prioritize real embedding examples over placeholder ones
+                                if 'sentence_transformers' in match or 'SentenceTransformer' in match:
+                                    quickstart_code = match.strip()
+                                    source_file = filepath
+                                    print(f'✅ Found sentence-transformers example in {filepath}')
+                                    break
+                                elif 'embedding_function' in match and 'torch.randn' not in match:
+                                    # Real embedding function, not placeholder
+                                    quickstart_code = match.strip()
+                                    source_file = filepath
+                                    print(f'✅ Found real embedding example in {filepath}')
+                                    break
+                                elif quickstart_code is None and 'embedding_function' in match:
+                                    # Fallback to any example, even with placeholders
+                                    quickstart_code = match.strip()
+                                    source_file = filepath
+                                    print(f'⚠️ Found placeholder example in {filepath} (will enhance)')
+                        if quickstart_code and ('sentence_transformers' in quickstart_code or 'torch.randn' not in quickstart_code):
                             break
                     if quickstart_code:
                         break
@@ -156,11 +169,30 @@ jobs:
             # Clean up the code for execution
             cleaned_code = quickstart_code
             
+            # Replace placeholder embeddings with real ones if needed
+            if 'torch.randn' in cleaned_code:
+                print('🔧 Enhancing placeholder embeddings with real sentence-transformers...')
+                # Replace the torch.randn line with real embedding
+                cleaned_code = cleaned_code.replace(
+                    'return torch.randn(len(texts), 384)  # Example placeholder',
+                    'from sentence_transformers import SentenceTransformer; model = SentenceTransformer("all-MiniLM-L6-v2"); embeddings = model.encode(texts); return torch.tensor(embeddings)'
+                )
+                # Also handle variations
+                cleaned_code = re.sub(
+                    r'return torch\.randn\([^)]+\)[^#]*#[^\\n]*',
+                    'from sentence_transformers import SentenceTransformer; model = SentenceTransformer("all-MiniLM-L6-v2"); embeddings = model.encode(texts); return torch.tensor(embeddings)',
+                    cleaned_code
+                )
+            
             # Add necessary imports if missing
             if 'import torch' not in cleaned_code:
                 cleaned_code = 'import torch\n' + cleaned_code
             if 'from vcs import compute_vcs_score' not in cleaned_code:
                 cleaned_code = 'from vcs import compute_vcs_score\n' + cleaned_code
+            
+            # Add NLTK download if sentence_transformers example includes NLTK
+            if 'nltk' in cleaned_code and 'nltk.download' not in cleaned_code:
+                cleaned_code = 'import nltk\nnltk.download("punkt", quiet=True)\n' + cleaned_code
             
             # Execute the code
             exec(cleaned_code, exec_globals)
