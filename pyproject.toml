@@ -38,7 +38,7 @@ keywords = [
     "semantic-similarity",
     "alignment-metrics"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = [
     "numpy>=1.20.0",
     "matplotlib>=3.5.0",
