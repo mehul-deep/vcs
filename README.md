@@ -148,15 +148,6 @@ if 'internals' in result:
 
 ## 📈 Performance & Benchmarks
 
-<div align="center">
-### 🎯 Accuracy Comparison
-| **Metric** | **VCS** | **BLEU** | **ROUGE** | **BERTScore** |
-|:---:|:---:|:---:|:---:|:---:|
-| **Narrative Structure** | ✅ 95% | ❌ 45% | ❌ 52% | ❌ 67% |
-| **Semantic Similarity** | ✅ 92% | ❌ 71% | ✅ 89% | ✅ 88% |
-| **Long-form Coherence** | ✅ 94% | ❌ 38% | ❌ 61% | ❌ 73% |
-
-</div>
 
 ## 🛠️ Requirements
 
