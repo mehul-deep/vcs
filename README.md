@@ -62,46 +62,23 @@ Click on a feature to learn more.
 
 ---
 
-## 🚀 Quick Access Dashboard
-
-<div align="center">
-
-| 🎯 **Action** | 🔗 **Direct Link** | ⚡ **One-Click Access** |
-|:---|:---|:---|
-| 🧪 **Try VCS Now** | [Interactive Playground](https://hdubey-debug.github.io/vcs/) | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hdubey-debug/vcs/blob/main/examples/vcs_demo.ipynb) |
-| 📊 **See Examples** | [Live Examples](https://hdubey-debug.github.io/vcs/) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/hdubey-debug/vcs/main?filepath=examples) |
-| 📖 **Full Docs** | [Complete Documentation](https://hdubey-debug.github.io/vcs/) | [![Docs](https://img.shields.io/badge/docs-latest-teal?style=flat-square)](https://hdubey-debug.github.io/vcs/) |
-| 📦 **Install Package** | [PyPI Package](https://pypi.org/project/vcs-metrics/) | [![Install](https://img.shields.io/badge/pip%20install-vcs--metrics-teal?style=flat-square)](https://pypi.org/project/vcs-metrics/) |
-
-</div>
-
----
-
 ## ⚡ Getting Started
 
-<div align="center">
-
-### 🚀 **Transform Your Text Analysis in Minutes**
-*From installation to advanced metrics - your journey to state-of-the-art narrative evaluation starts here*
-
-</div>
+Welcome to VCS Metrics! This guide will walk you through everything you need to start analyzing narrative similarity between texts. We'll cover installation, setup, and your first VCS analysis step by step.
 
 
 ---
 
-<div align="center">
+### 📦 Step 1: Installation
 
-## 📦 **Installation Hub**
-*Choose your preferred installation method below*
-
-</div>
+Choose the installation method that fits your needs:
 
 <table align="center" width="100%">
 <tr>
 <td width="50%" align="center">
 
-### 🎯 **Quick Start** 
-*Perfect for immediate testing*
+### 🎯 **For Most Users** 
+*Recommended if you just want to use VCS*
 
 <details>
 <summary><b>🖱️ Click to expand installation steps</b></summary>
@@ -131,8 +108,8 @@ pip install vcs-metrics
 </td>
 <td width="50%" align="center">
 
-### 🛠️ **Developer Mode**
-*For contributors and advanced users*
+### 🛠️ **For Developers**
+*If you want to contribute or modify VCS*
 
 <details>
 <summary><b>🖱️ Click to expand development setup</b></summary>
@@ -201,62 +178,51 @@ VCS Metrics needs PyTorch but doesn't install it automatically to avoid conflict
 
 ---
 
-<div align="center">
+### 🛠️ System Requirements
 
-## 🛠️ **System Requirements**
-*Ensure your environment meets these specifications*
+Before installing VCS, make sure your system meets these requirements:
+
+<table align="center" width="100%">
+<tr>
+<td width="50%" align="center">
+
+### 🐍 **Python**
+
+<div style="background: linear-gradient(145deg, #dbeafe, #bfdbfe); padding: 20px; border-radius: 12px; border: 2px solid #3b82f6;">
+
+<img src="https://img.shields.io/badge/Python-3.10+-306998?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
+
+**Required: Python 3.10 or higher**
+
+VCS Metrics uses modern Python features and requires Python 3.10+. We recommend Python 3.11+ for optimal performance.
 
 </div>
 
-<div align="center">
-<table width="90%">
-<tr>
-<td align="center" width="25%">
-
-<img src="https://img.shields.io/badge/Python-3.8+-306998?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-
-**🐍 Python**  
-*Minimum: 3.8*  
-*Recommended: 3.11+*
-
 </td>
-<td align="center" width="25%">
+<td width="50%" align="center">
+
+### 🔥 **PyTorch**
+
+<div style="background: linear-gradient(145deg, #fed7d7, #fca5a5); padding: 20px; border-radius: 12px; border: 2px solid #dc2626;">
 
 <img src="https://img.shields.io/badge/PyTorch-1.9+-ee4c2c?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch"/>
 
-**🔥 PyTorch**  
-*Version 1.9.0+*  
-*Tensor Operations*
+**Required: PyTorch 1.9.0+**
 
-</td>
-<td align="center" width="25%">
+PyTorch handles tensor operations. Install it separately to avoid conflicts with your existing setup.
 
-<img src="https://img.shields.io/badge/NumPy-1.20+-013243?style=for-the-badge&logo=numpy&logoColor=white" alt="NumPy"/>
-
-**🔢 NumPy**  
-*Version 1.20.0+*  
-*Numerical Computing*
-
-</td>
-<td align="center" width="25%">
-
-<img src="https://img.shields.io/badge/Matplotlib-3.5+-11557c?style=for-the-badge" alt="Matplotlib"/>
-
-**📊 Visualization**  
-*Matplotlib 3.5+*  
-*Seaborn 0.11+*
+</div>
 
 </td>
 </tr>
 </table>
-</div>
 
 <div align="center">
 <table style="border: 2px solid #10b981; border-radius: 12px; background: linear-gradient(145deg, #d1fae5, #a7f3d0); padding: 15px; margin: 20px 0;">
 <tr>
 <td align="center">
 
-**💡 Performance Tip:** Python 3.11+ delivers up to 25% faster performance with VCS computations!
+**💡 Note:** VCS automatically installs other dependencies (numpy, matplotlib, seaborn) - you don't need to worry about them!
 
 </td>
 </tr>
@@ -265,12 +231,9 @@ VCS Metrics needs PyTorch but doesn't install it automatically to avoid conflict
 
 ---
 
-<div align="center">
+### 🔧 Step 2: Understanding VCS Functions
 
-## 🔧 **Core Function Architecture**
-*Master the building blocks of VCS analysis*
-
-</div>
+Before you can use VCS, you need to understand the two key functions it requires:
 
 
 <table align="center" width="100%">
@@ -477,12 +440,9 @@ def nv_embed_embedding_fn(texts: list[str],
 
 ---
 
-<div align="center">
+### 💻 Step 3: Run Your First VCS Analysis
 
-## 💻 **Live Demo & Quick Start**
-*See VCS in action with this complete working example*
-
-</div>
+Now let's see VCS in action with a complete working example:
 
 <div align="center">
 <table style="border: 2px solid #059669; border-radius: 12px; background: linear-gradient(145deg, #d1fae5, #a7f3d0); padding: 15px; margin: 20px 0;">
@@ -655,12 +615,9 @@ except Exception as e:
 
 ---
 
-<div align="center">
+### ⚙️ Step 4: Configure VCS Parameters (Optional)
 
-## ⚙️ **Advanced Configuration**
-*Fine-tune VCS behavior for your specific use case*
-
-</div>
+Once you're comfortable with the basics, you can fine-tune VCS behavior for your specific use case:
 
 
 <table align="center" width="100%">
@@ -716,87 +673,6 @@ result = compute_vcs_score(
 </tr>
 </table>
 
----
-
-<div align="center">
-
-## 🎓 **Learning Resources & Support**
-*Everything you need to master VCS*
-
-</div>
-
-<table align="center" width="100%">
-<tr>
-<td width="33%" align="center">
-
-### 📚 **Documentation**
-
-<div align="center">
-
-[![Docs](https://img.shields.io/badge/📖_Full_Docs-2563eb?style=for-the-badge&logo=gitbook&logoColor=white)](https://hdubey-debug.github.io/vcs/)
-
-</div>
-
-- 📋 [Usage Guide](https://hdubey-debug.github.io/vcs/)  
-- 🔧 [API Reference](https://hdubey-debug.github.io/vcs/api.html)  
-- 📊 Visualization Examples  
-- 🎯 Best Practices  
-
-</td>
-<td width="33%" align="center">
-
-### 🆘 **Quick Help**
-
-<div align="center">
-
-[![Support](https://img.shields.io/badge/🆘_Get_Help-dc2626?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hdubey-debug/vcs/discussions)
-
-</div>
-
-- ❓ **ImportError:** Install PyTorch first  
-- 🔍 **Model not found:** Download SOTA models  
-- 💾 **GPU issues:** Use smaller batches  
-- 📈 **Poor scores:** Try different segmenters  
-
-</td>
-<td width="33%" align="center">
-
-### 🚀 **Next Level**
-
-<div align="center">
-
-[![Advanced](https://img.shields.io/badge/🚀_Advanced-7c3aed?style=for-the-badge&logo=rocket&logoColor=white)](#)
-
-</div>
-
-- 🧠 Custom segmentation strategies  
-- 🔬 MTEB leaderboard models  
-- 📊 Advanced visualizations  
-- 🎛️ Parameter optimization  
-
-</td>
-</tr>
-</table>
-
-<div align="center">
-
-### 🌟 **Ready to Transform Your Text Analysis?**
-
-<table style="border: 2px solid #059669; border-radius: 12px; background: linear-gradient(145deg, #ecfdf5, #d1fae5); padding: 20px; margin: 20px 0;">
-<tr>
-<td align="center">
-
-**🎯 You now have everything needed to start using VCS Metrics!**  
-*From installation to advanced configuration - you're ready to revolutionize your narrative analysis.*
-
-</td>
-</tr>
-</table>
-
-[![Get Started Now](https://img.shields.io/badge/🚀_Start_Analyzing_Now-059669?style=for-the-badge&logo=play&logoColor=white)](#-installation-hub)
-[![Join Community](https://img.shields.io/badge/💬_Join_Community-6366f1?style=for-the-badge&logo=github&logoColor=white)](https://github.com/hdubey-debug/vcs/discussions)
-
-</div>
 
 ---
 
