@@ -1,8 +1,8 @@
 <div align="center">
+  <h1 align="center">Video Comprehension Score (VCS)</h1>
   <a href="https://github.com/hdubey-debug/vcs">
     <img src=".github/assets/vcs-process-flow.png" alt="VCS Process Flow" width="700"/>
   </a>
-  <h1 align="center">Video Comprehension Score (VCS)</h1>
   <p align="center">
     <em>A Comprehensive Python Library for Narrative Similarity Evaluation</em>
     <br />
