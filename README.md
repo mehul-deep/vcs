@@ -19,8 +19,6 @@
 </div>
 
 <p align="center">
-  <a href="https://hdubey-debug.github.io/vcs/playground.html">🧪 Interactive Playground</a>
-  ·
   <a href="https://github.com/hdubey-debug/vcs/issues">🐛 Report Bug</a>
   ·
   <a href="https://github.com/hdubey-debug/vcs/discussions">💬 Community Q&A</a>
