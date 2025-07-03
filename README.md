@@ -148,36 +148,6 @@ pre-commit install
 
 ---
 
-<div align="center">
-
-### ⚠️ **PyTorch Requirement**
-
-</div>
-
-<div align="center">
-<table style="border: 2px solid #f59e0b; border-radius: 12px; background: linear-gradient(145deg, #fef3c7, #fde68a); padding: 20px;">
-<tr>
-<td align="center">
-
-**🔥 PyTorch >= 1.9.0 Required**
-
-VCS Metrics needs PyTorch but doesn't install it automatically to avoid conflicts.
-
-<div align="center">
-
-[![PyTorch](https://img.shields.io/badge/Get_PyTorch-ee4c2c?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/get-started/locally/)
-
-</div>
-
-**💡 Pro Tip:** In Google Colab, PyTorch is pre-installed!
-
-</td>
-</tr>
-</table>
-</div>
-
----
-
 ### 🛠️ System Requirements
 
 Before installing VCS, make sure your system meets these requirements:
@@ -209,7 +179,9 @@ VCS Metrics uses modern Python features and requires Python 3.10+. We recommend 
 
 **Required: PyTorch 1.9.0+**
 
-PyTorch handles tensor operations. Install it separately to avoid conflicts with your existing setup.
+VCS needs PyTorch but doesn't install it automatically to avoid conflicts. Get it from the [official PyTorch website](https://pytorch.org/get-started/locally/).
+
+**💡 Pro Tip:** In Google Colab, PyTorch is pre-installed!
 
 </div>
 
@@ -231,9 +203,28 @@ PyTorch handles tensor operations. Install it separately to avoid conflicts with
 
 ---
 
-### 🔧 Step 2: Understanding VCS Functions
+### 🔧 Step 2: Prepare Your Functions
 
-Before you can use VCS, you need to understand the two key functions it requires:
+Now that VCS is installed, you need to define two functions before you can use the VCS API. Here's how VCS works:
+
+#### 📋 VCS API Overview
+
+```python
+from vcs import compute_vcs_score
+
+result = compute_vcs_score(
+    reference_text="Your reference text here",
+    generated_text="Your generated text here", 
+    segmenter_fn=your_segmenter_function,        # ← You provide this
+    embedding_fn_las=your_embedding_function,    # ← You provide this  
+    embedding_fn_gas=your_embedding_function,    # ← You provide this
+    return_all_metrics=True
+)
+
+print(f"VCS Score: {result['VCS']:.4f}")
+```
+
+As you can see, VCS requires two custom functions from you. Let's understand what each should do:
 
 
 <table align="center" width="100%">
@@ -241,33 +232,20 @@ Before you can use VCS, you need to understand the two key functions it requires
 <td width="50%" align="center">
 
 ### 🔪 **Segmenter Function**
-*Intelligent Text Splitting*
 
 <div style="background: linear-gradient(145deg, #fef3c7, #fde68a); padding: 20px; border-radius: 12px; border: 2px solid #f59e0b;">
 
-**Purpose:** Transform raw text into meaningful segments
+**What it does:** Splits text into meaningful segments (sentences, paragraphs, etc.)
 
-**Input:** `str` (raw text)  
-**Output:** `List[str]` (text segments)
-
-<details>
-<summary><b>📋 View Function Signature</b></summary>
-
+**Required signature:**
 ```python
-def segmenter_function(text: str) -> List[str]:
-    """
-    Split text into segments for analysis.
-    
-    Args:
-        text: Input text to segment
-        
-    Returns:
-        List of text segments
-    """
-    pass
+def your_segmenter(text: str) -> List[str]:
+    # Your implementation here
+    return list_of_text_segments
 ```
 
-</details>
+**You can use:** Any library or model (NLTK, spaCy, custom logic, etc.)  
+**Must return:** List of strings where each string is a text segment
 
 </div>
 
@@ -275,33 +253,20 @@ def segmenter_function(text: str) -> List[str]:
 <td width="50%" align="center">
 
 ### 🧠 **Embedding Function**
-*Text to Vector Transformation*
 
 <div style="background: linear-gradient(145deg, #f3e8ff, #e9d5ff); padding: 20px; border-radius: 12px; border: 2px solid #7c3aed;">
 
-**Purpose:** Convert text segments to numerical vectors
+**What it does:** Converts text segments into numerical vectors (embeddings)
 
-**Input:** `List[str]` (text segments)  
-**Output:** `torch.Tensor` (embeddings)
-
-<details>
-<summary><b>📋 View Function Signature</b></summary>
-
+**Required signature:**
 ```python
-def embedding_function(texts: List[str]) -> torch.Tensor:
-    """
-    Convert text segments to embeddings.
-    
-    Args:
-        texts: List of text segments to embed
-        
-    Returns:
-        PyTorch tensor of shape (len(texts), embedding_dim)
-    """
-    pass
+def your_embedder(texts: List[str]) -> torch.Tensor:
+    # Your implementation here  
+    return tensor_of_embeddings
 ```
 
-</details>
+**You can use:** Any embedding model (sentence-transformers, OpenAI, etc.)  
+**Must return:** PyTorch tensor of shape `(len(texts), embedding_dim)`
 
 </div>
 
@@ -309,22 +274,16 @@ def embedding_function(texts: List[str]) -> torch.Tensor:
 </tr>
 </table>
 
----
+#### 🌟 Author Recommendations (2025)
 
-<div align="center">
-
-## 🌟 **SOTA Recommendations 2025**
-*Cutting-edge models for optimal performance*
-
-</div>
+For best results, we recommend these state-of-the-art models:
 
 <div align="center">
 <table style="border: 2px solid #dc2626; border-radius: 12px; background: linear-gradient(145deg, #fecaca, #fca5a5); padding: 15px; margin: 20px 0;">
 <tr>
 <td align="center">
 
-⚠️ **Technology Evolution Alert** ⚠️  
-*These recommendations are current as of 2025. As better models emerge, always research the latest SOTA options.*
+⚠️ **Note:** These recommendations are current as of 2025. Always research the latest SOTA options.
 
 </td>
 </tr>
@@ -343,36 +302,16 @@ def embedding_function(texts: List[str]) -> torch.Tensor:
 
 <div style="background: linear-gradient(145deg, #fff5f5, #fed7d7); padding: 20px; border-radius: 12px; border: 2px solid #e53e3e;">
 
-**🏆 Winner: Segment Any Text (SAT)**
+**🏆 Recommended: Segment Any Text (SAT)**
 
-✨ **Why SAT dominates:**
-- 🎯 State-of-the-art accuracy  
+✨ **Why we recommend SAT:**
+- 🎯 State-of-the-art segmentation accuracy  
 - ⚡ Intelligent boundary detection  
-- 🧠 Context-aware segmentation  
+- 🧠 Context-aware text splitting  
 - 🔬 Research-grade performance  
 
-<details>
-<summary><b>🚀 View SAT Implementation</b></summary>
-
-```python
-import re, string, contractions
-# from wtpsplit import SaT
-# sat_adapted = SaT("sat-12l-sm")
-
-punctuations = set(string.punctuation) - {"'"}
-
-def sat_segmenter(text: str) -> list[str]:
-    # Expand contractions & clean text
-    text = contractions.fix(text)
-    text = remove_punctuation(text)
-    text = fix_punctuation_spacing(text)
-    
-    # SAT magic ✨
-    sentences = sat_adapted.split(text)
-    return [s.strip() for s in sentences if s.strip()]
-```
-
-</details>
+📖 **Installation:** `pip install wtpsplit`  
+🔗 **Repository:** [github.com/segment-any-text/wtpsplit](https://github.com/segment-any-text/wtpsplit)
 
 </div>
 
@@ -387,37 +326,16 @@ def sat_segmenter(text: str) -> list[str]:
 
 <div style="background: linear-gradient(145deg, #f0fff4, #c6f6d5); padding: 20px; border-radius: 12px; border: 2px solid #38a169;">
 
-**🥇 Champion: nv-embed-v2**
+**🥇 Recommended: nv-embed-v2**
 
-🌟 **Why nv-embed-v2 excels:**
-- 📊 [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard) leader  
+🌟 **Why we recommend nv-embed-v2:**
+- 📊 Top performer on [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard)  
 - 🚀 Superior semantic understanding  
 - 💪 Robust multilingual support  
-- ⚡ Optimized for VCS metrics  
+- ⚡ Excellent for VCS analysis  
 
-<details>
-<summary><b>🔥 View nv-embed-v2 Implementation</b></summary>
-
-```python
-import torch, torch.nn.functional as F
-# model_nv = SentenceTransformer('nvidia/NV-Embed-v2', 
-#                                trust_remote_code=True)
-
-def nv_embed_embedding_fn(texts: list[str], 
-                         model=None, batch_size=8):
-    # Process in batches for memory efficiency
-    all_embs = []
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
-        emb_np = model.encode(batch, max_length=32768)
-        emb = torch.tensor(emb_np, dtype=torch.float)
-        emb = F.normalize(emb, p=2, dim=1)  # Normalize
-        all_embs.append(emb)
-    
-    return torch.cat(all_embs, dim=0)
-```
-
-</details>
+📖 **Installation:** `pip install sentence-transformers`  
+🔗 **Model:** [nvidia/NV-Embed-v2](https://huggingface.co/nvidia/NV-Embed-v2)
 
 </div>
 
@@ -430,8 +348,7 @@ def nv_embed_embedding_fn(texts: list[str],
 <tr>
 <td align="center">
 
-**🔬 Research Alternatives**  
-*Traditional: NLTK, spaCy | Lightweight: sentence-transformers | Custom: Build your own!*
+**💡 Alternative Options:** NLTK, spaCy, sentence-transformers, or build your own custom functions!
 
 </td>
 </tr>
