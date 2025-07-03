@@ -22,6 +22,8 @@
   <a href="https://github.com/hdubey-debug/vcs/issues">🐛 Report Bug</a>
   ·
   <a href="https://github.com/hdubey-debug/vcs/discussions">💬 Community Q&A</a>
+  ·
+  <a href="https://colab.research.google.com/drive/1l6GXWNBGFM1UwGohnIu1b071bn8ekJIf?usp=sharing">📓 Interactive Notebook</a>
 </p>
 
 ---
