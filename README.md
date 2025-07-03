@@ -4,7 +4,7 @@
     <img src=".github/assets/vcs-process-flow.png" alt="VCS Process Flow" width="700"/>
   </a>
   <p align="center">
-    <em>A Comprehensive Python Library for Narrative Similarity Evaluation</em>
+    <em>A Comprehensive Python Library for Narrative Similarity Evaluation between two very long descriptions </em>
     <br />
   </p>
 </div>
