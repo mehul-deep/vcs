@@ -28,47 +28,69 @@
 
 ## 🤔 What is VCS?
 
-**Video Comprehension Score (VCS)** is a comprehensive Python library designed to evaluate narrative similarity between two texts. Unlike traditional metrics like BLEU or ROUGE that focus on word-level overlap, VCS evaluates semantic meaning, narrative structure, and chronological flow - making it perfect for analyzing long-form content like video descriptions, stories, or documents.
+Recent advancements in Large Video Language Models (LVLMs) have enabled generation of detailed, long-form narratives from complex video content. However, effectively evaluating whether these models genuinely comprehend a video's narrative—events, entities, and their interactions—remains challenging.
 
-**VCS combines three powerful metrics:**
-- **🌍 Global Alignment Score (GAS)**: Measures overall semantic similarity
-- **🎯 Local Alignment Score (LAS)**: Evaluates segment-by-segment matching
-- **📖 Narrative Alignment Score (NAS)**: Assesses chronological flow preservation
+**The Problem with Current Metrics:**
+- Traditional n-gram metrics (BLEU, ROUGE, CIDEr) suffer from the "many-to-one mapping" problem, penalizing valid stylistic variations
+- They inadequately evaluate narrative chronology and structural coherence
+- Embedding-based metrics struggle with context limitations in lengthy narratives
+- LLM-driven methods lack consistency and often miss narrative structure assessment
 
-**Perfect for:** Video caption evaluation, story generation assessment, document summarization quality, and any task requiring deep narrative understanding.
+**Video Comprehension Score (VCS)** addresses these limitations by providing a novel metric that evaluates dense, long-form video descriptions both semantically and structurally. VCS is designed specifically for narrative-aware evaluation, making it perfect for assessing video captioning models, story generation systems, and any application requiring deep comprehension analysis.
+
+**VCS combines three sophisticated metrics:**
+- **🌍 Global Alignment Score (GAS)**: Measures overall thematic similarity using full-text embeddings
+- **🎯 Local Alignment Score (LAS)**: Assesses fine-grained semantic correspondence with optimal chunk-level matching
+- **📖 Narrative Alignment Score (NAS)**: Evaluates chronological consistency with configurable tolerance for narrative flexibility
+
+**Key Innovation:** VCS balances strict versus lenient content alignment, allowing valid descriptive variability while penalizing core narrative distortions, and integrates global and local assessments to detect structural misorderings.
 
 ---
 
 ## 🌟 Key Features
 
-Click on a feature to learn more.
+Explore the comprehensive capabilities that make VCS a powerful narrative evaluation toolkit.
 
 <table width="100%" align="center" style="border: none; border-collapse: collapse;">
   <tr style="background-color: transparent;">
     <td style="padding: 10px; border: none; vertical-align: top;">
       <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">🌍 Global Alignment (GAS)</summary>
-        <p style="padding-top: 10px;">Measures semantic similarity at the full-text level using advanced embeddings. It provides a holistic view of how well the generated text captures the overall meaning of the reference text.</p>
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">🧮 Comprehensive Metric Suite</summary>
+        <p style="padding-top: 10px;">Computes VCS along with detailed breakdowns: GAS (global thematic similarity), LAS with precision/recall components, and NAS with distance-based and line-based sub-metrics. Access all internal calculations including penalty systems, mapping windows, and alignment paths.</p>
       </details>
     </td>
     <td style="padding: 10px; border: none; vertical-align: top;">
       <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">🎯 Local Alignment (LAS)</summary>
-        <p style="padding-top: 10px;">Evaluates segment-by-segment semantic similarity with optimal matching. This is crucial for understanding if specific details and events are correctly represented in the generated text.</p>
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">📊 Advanced Visualization Engine</summary>
+        <p style="padding-top: 10px;">11 specialized visualization functions including similarity heatmaps, alignment analysis, best-match visualizations, narrative flow diagrams, and precision/recall breakdowns. Each metric component can be visualized with publication-quality plots.</p>
       </details>
     </td>
   </tr>
   <tr style="background-color: transparent;">
     <td style="padding: 10px; border: none; vertical-align: top;">
       <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">📖 Narrative Flow (NAS)</summary>
-        <p style="padding-top: 10px;">Assesses how well the narrative structure and chronology are preserved. It ensures that the order and flow of events in the generated text match the reference.</p>
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">📋 Professional PDF Reports</summary>
+        <p style="padding-top: 10px;">Generate comprehensive multi-page PDF reports with all metrics, visualizations, and analysis details. Supports both complete reports and customizable selective reports. Professional formatting suitable for research publications.</p>
       </details>
     </td>
     <td style="padding: 10px; border: none; vertical-align: top;">
       <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">📊 Rich Visualizations</summary>
-        <p style="padding-top: 10px;">Generate detailed plots, similarity heatmaps, and comprehensive PDF reports to visually inspect and understand the quality of narrative alignment.</p>
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">⚙️ Flexible Configuration System</summary>
+        <p style="padding-top: 10px;">Fine-tune evaluation with configurable parameters: chunk sizes, similarity thresholds, context windows, and Local Chronology Tolerance (LCT). Supports custom segmentation and embedding functions for domain-specific applications.</p>
+      </details>
+    </td>
+  </tr>
+  <tr style="background-color: transparent;">
+    <td style="padding: 10px; border: none; vertical-align: top;">
+      <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">🔬 Research-Grade Analysis</summary>
+        <p style="padding-top: 10px;">Designed for academic research with rigorous evaluation methodology. Handles any text length, provides reproducible results, and includes detailed algorithm explanations. Perfect for video captioning evaluation and narrative analysis studies.</p>
+      </details>
+    </td>
+    <td style="padding: 10px; border: none; vertical-align: top;">
+      <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">🚀 Production-Ready Performance</summary>
+        <p style="padding-top: 10px;">Memory-efficient implementation with batch processing capabilities. Scalable for large-scale text comparison tasks. Comprehensive error handling and validation for reliable production deployment.</p>
       </details>
     </td>
   </tr>
