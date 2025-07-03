@@ -922,14 +922,6 @@ If you use VCS Metrics in your research, please cite:
 ![Contributors](https://img.shields.io/github/contributors/hdubey-debug/vcs?color=orange)
 ![Last Commit](https://img.shields.io/github/last-commit/hdubey-debug/vcs?color=green)
 
-### 💫 Join Our Growing Community!
-
-| Platform | Purpose | Link |
-|:---:|:---|:---|
-| 🐙 **GitHub** | Source code, issues, PRs | [hdubey-debug/vcs](https://github.com/hdubey-debug/vcs) |
-| 💬 **Discussions** | Q&A, ideas, showcase | [GitHub Discussions](https://github.com/hdubey-debug/vcs/discussions) |
-| 📦 **PyPI** | Package releases | [vcs-metrics](https://pypi.org/project/vcs-metrics/) |
-| 📖 **Docs** | Complete documentation | [hdubey-debug.github.io/vcs](https://hdubey-debug.github.io/vcs/) |
 
 </div>
 
