@@ -6,7 +6,6 @@
   <p align="center">
     <em>A Comprehensive Python Library for Narrative Similarity Evaluation</em>
     <br />
-    <a href="https://hdubey-debug.github.io/vcs/"><strong>🚀 Explore the Docs »</strong></a>
   </p>
 </div>
 
