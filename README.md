@@ -25,6 +25,20 @@
 </p>
 
 ---
+
+## 🤔 What is VCS?
+
+**Video Comprehension Score (VCS)** is a comprehensive Python library designed to evaluate narrative similarity between two texts. Unlike traditional metrics like BLEU or ROUGE that focus on word-level overlap, VCS evaluates semantic meaning, narrative structure, and chronological flow - making it perfect for analyzing long-form content like video descriptions, stories, or documents.
+
+**VCS combines three powerful metrics:**
+- **🌍 Global Alignment Score (GAS)**: Measures overall semantic similarity
+- **🎯 Local Alignment Score (LAS)**: Evaluates segment-by-segment matching
+- **📖 Narrative Alignment Score (NAS)**: Assesses chronological flow preservation
+
+**Perfect for:** Video caption evaluation, story generation assessment, document summarization quality, and any task requiring deep narrative understanding.
+
+---
+
 ## 🌟 Key Features
 
 Click on a feature to learn more.
@@ -532,10 +546,9 @@ except Exception as e:
 
 ---
 
-### ⚙️ Step 4: Configure VCS Parameters (Optional)
+## ⚙️ Advanced Configuration
 
 Once you're comfortable with the basics, you can fine-tune VCS behavior for your specific use case:
-
 
 <table align="center" width="100%">
 <tr>
@@ -589,25 +602,6 @@ result = compute_vcs_score(
 </td>
 </tr>
 </table>
-
-
----
-
-## 🛠️ Requirements
-
-<div align="center">
-
-| **Component** | **Version** | **Purpose** |
-|:---|:---:|:---|
-| **Python** | 3.8+ | Core runtime |
-| **PyTorch** | ≥1.9.0 | Tensor operations |
-| **NumPy** | ≥1.20.0 | Numerical computing |
-| **Matplotlib** | ≥3.5.0 | Plotting and visualization |
-| **Seaborn** | ≥0.11.0 | Statistical visualizations |
-
-</div>
-
-> **📝 Note**: PyTorch is not included as a direct dependency to avoid conflicts. Install it separately from the [official PyTorch website](https://pytorch.org/get-started/locally/).
 
 ---
 
@@ -948,19 +942,9 @@ We're always looking for passionate developers and researchers to join our missi
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please see the [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-
-**MIT License** - see the [LICENSE](LICENSE) file for details
 
 ---
 
