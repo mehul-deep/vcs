@@ -86,100 +86,6 @@ Explore the comprehensive capabilities that make VCS a powerful narrative evalua
 
 ---
 
-## 🎬 CLIP-CC Dataset
-
-**Benchmark your video models with our comprehensive evaluation dataset!**
-
-<div align="center">
-<table style="border: 2px solid #7c3aed; border-radius: 12px; background: linear-gradient(145deg, #f3e8ff, #e9d5ff); padding: 20px; margin: 20px 0;">
-<tr>
-<td align="center">
-
-[![CLIP-CC Dataset](https://img.shields.io/badge/🤗_Hugging_Face-CLIP--CC_Dataset-ff9500?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/datasets/IVSL-SDSU/Clip-CC)
-
-**📊 Dataset Statistics**
-- 🎥 **200 Movie Clips** (90 seconds each)
-- 📝 **Human-Annotated** long-form captions
-- 🎯 **Designed for VCS evaluation**
-- 🔬 **Research-grade quality**
-
-</td>
-</tr>
-</table>
-</div>
-
-<table align="center" width="100%">
-<tr>
-<td width="50%" align="center">
-
-### 🎯 **Perfect for VCS Evaluation**
-
-<div style="background: linear-gradient(145deg, #dbeafe, #bfdbfe); padding: 20px; border-radius: 12px; border: 2px solid #3b82f6;">
-
-**Why CLIP-CC + VCS?**
-- 🎬 **Real movie content** with complex narratives
-- 📏 **Long-form descriptions** ideal for VCS analysis
-- 🧠 **Human-quality annotations** as ground truth
-- 📊 **Comprehensive evaluation** of video comprehension
-
-**Perfect for testing:**
-- Video captioning models
-- Video-to-text systems
-- Multimodal language models
-- Narrative understanding capabilities
-
-</div>
-
-</td>
-<td width="50%" align="center">
-
-### 🚀 **Quick Start with CLIP-CC**
-
-<div style="background: linear-gradient(145deg, #ecfdf5, #d1fae5); padding: 20px; border-radius: 12px; border: 2px solid #059669;">
-
-```python
-# Load CLIP-CC dataset
-from datasets import load_dataset
-dataset = load_dataset("IVSL-SDSU/Clip-CC")
-
-# Get reference and generated captions
-reference = dataset['train'][0]['human_caption']
-generated = your_model.generate_caption(video)
-
-# Evaluate with VCS
-vcs_score = compute_vcs_score(
-    reference_text=reference,
-    generated_text=generated,
-    segmenter_fn=your_segmenter,
-    embedding_fn_las=your_embedder,
-    embedding_fn_gas=your_embedder,
-    return_all_metrics=True
-)
-
-print(f"VCS Score: {vcs_score['VCS']:.4f}")
-```
-
-</div>
-
-</td>
-</tr>
-</table>
-
-<div align="center">
-<table style="border: 2px solid #dc2626; border-radius: 12px; background: linear-gradient(145deg, #fecaca, #fca5a5); padding: 15px; margin: 20px 0;">
-<tr>
-<td align="center">
-
-**🎯 Challenge Your Model:** Can your video model achieve high VCS scores on CLIP-CC?  
-**📈 Benchmark Goal:** Higher VCS scores indicate better narrative comprehension!
-
-</td>
-</tr>
-</table>
-</div>
-
----
-
 ## ⚡ Getting Started
 
 Welcome to VCS Metrics! This guide will walk you through everything you need to start analyzing narrative similarity between texts. We'll cover installation, setup, and your first VCS analysis step by step.
@@ -1019,6 +925,100 @@ If you use VCS Metrics in your research, please cite:
 ![Last Commit](https://img.shields.io/github/last-commit/hdubey-debug/vcs?color=green)
 
 
+</div>
+
+---
+
+## 🎬 CLIP-CC Benchmark Dataset
+
+**Looking to benchmark your video models? Try our complementary dataset!**
+
+<div align="center">
+<table style="border: 2px solid #7c3aed; border-radius: 12px; background: linear-gradient(145deg, #f3e8ff, #e9d5ff); padding: 20px; margin: 20px 0;">
+<tr>
+<td align="center">
+
+[![CLIP-CC Dataset](https://img.shields.io/badge/🤗_Hugging_Face-CLIP--CC_Dataset-ff9500?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/datasets/IVSL-SDSU/Clip-CC)
+
+**📊 Dataset Statistics**
+- 🎥 **200 Movie Clips** (90 seconds each)
+- 📝 **Human-Annotated** long-form captions
+- 🎯 **Designed for VCS evaluation**
+- 🔬 **Research-grade quality**
+
+</td>
+</tr>
+</table>
+</div>
+
+<table align="center" width="100%">
+<tr>
+<td width="50%" align="center">
+
+### 🎯 **Perfect for VCS Evaluation**
+
+<div style="background: linear-gradient(145deg, #dbeafe, #bfdbfe); padding: 20px; border-radius: 12px; border: 2px solid #3b82f6;">
+
+**Why CLIP-CC + VCS?**
+- 🎬 **Real movie content** with complex narratives
+- 📏 **Long-form descriptions** ideal for VCS analysis
+- 🧠 **Human-quality annotations** as ground truth
+- 📊 **Comprehensive evaluation** of video comprehension
+
+**Perfect for testing:**
+- Video captioning models
+- Video-to-text systems
+- Multimodal language models
+- Narrative understanding capabilities
+
+</div>
+
+</td>
+<td width="50%" align="center">
+
+### 🚀 **Quick Start with CLIP-CC**
+
+<div style="background: linear-gradient(145deg, #ecfdf5, #d1fae5); padding: 20px; border-radius: 12px; border: 2px solid #059669;">
+
+```python
+# Load CLIP-CC dataset
+from datasets import load_dataset
+dataset = load_dataset("IVSL-SDSU/Clip-CC")
+
+# Get reference and generated captions
+reference = dataset['train'][0]['human_caption']
+generated = your_model.generate_caption(video)
+
+# Evaluate with VCS
+vcs_score = compute_vcs_score(
+    reference_text=reference,
+    generated_text=generated,
+    segmenter_fn=your_segmenter,
+    embedding_fn_las=your_embedder,
+    embedding_fn_gas=your_embedder,
+    return_all_metrics=True
+)
+
+print(f"VCS Score: {vcs_score['VCS']:.4f}")
+```
+
+</div>
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+<table style="border: 2px solid #dc2626; border-radius: 12px; background: linear-gradient(145deg, #fecaca, #fca5a5); padding: 15px; margin: 20px 0;">
+<tr>
+<td align="center">
+
+**🎯 Challenge Your Model:** Can your video model achieve high VCS scores on CLIP-CC?  
+**📈 Benchmark Goal:** Higher VCS scores indicate better narrative comprehension!
+
+</td>
+</tr>
+</table>
 </div>
 
 ---
