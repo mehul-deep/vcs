@@ -593,9 +593,6 @@ result = compute_vcs_score(
 
 ---
 
-## 📈 Performance & Benchmarks
-
-
 ## 🛠️ Requirements
 
 <div align="center">
@@ -646,42 +643,198 @@ result = compute_vcs_score(
 ## 🏗️ Project Structure
 
 ```
-vcs-metrics/
-├── 📁 src/vcs/                 # Main package code
-│   ├── 📄 __init__.py
-│   ├── 📁 _metrics/           # Core metrics implementations
-│   ├── 📁 _visualize_vcs/     # Visualization components
-│   └── 📄 scorer.py           # Main API
-├── 📁 docs/                   # Documentation and website
-│   ├── 📄 index.html          # Main website
-│   ├── 📄 playground.html     # Interactive playground
-│   └── 📄 api.html            # API documentation
-├── 📁 .github/workflows/      # CI/CD pipelines
-├── 📄 pyproject.toml         # Package configuration
-└── 📄 README.md              # This file
+vcs/
+├── 📁 src/vcs/                  # Main package source code
+│   ├── 📄 __init__.py           # Package initialization
+│   ├── 📄 scorer.py             # Main VCS API entry point
+│   ├── 📁 _metrics/             # Core VCS metrics implementations
+│   │   ├── 📁 _gas/             # Global Alignment Score
+│   │   ├── 📁 _las/             # Local Alignment Score  
+│   │   ├── 📁 _nas/             # Narrative Alignment Score
+│   │   └── 📁 _vcs/             # Combined VCS computation
+│   ├── 📁 _visualize_vcs/       # Comprehensive visualization suite
+│   │   ├── 📁 _similarity_matrix/
+│   │   ├── 📁 _best_match/
+│   │   ├── 📁 _distance_nas/
+│   │   ├── 📁 _line_nas/
+│   │   ├── 📁 _pdf_report/      # PDF report generation
+│   │   └── 📁 _metrics_summary/
+│   ├── 📁 _segmenting/          # Text segmentation utilities
+│   ├── 📁 _matching/            # Optimal text matching algorithms
+│   ├── 📁 _mapping_windows/     # Context window management
+│   └── 📁 _utils/               # Helper utilities
+├── 📁 docs/                     # Documentation and interactive demos
+│   ├── 📄 index.html            # Main documentation website
+│   ├── 📁 pages/                # Documentation pages
+│   │   ├── 📄 api.html          # API reference
+│   │   ├── 📄 playground.html   # Interactive playground
+│   │   └── 📄 example.html      # Usage examples
+│   ├── 📁 widgets/              # Interactive visualization widgets
+│   ├── 📁 sphinx/               # Sphinx documentation source
+│   └── 📁 assets/               # Documentation assets (CSS, JS, videos)
+├── 📁 .github/                  # GitHub configuration
+│   └── 📁 workflows/            # CI/CD automation pipelines
+│       ├── 📄 test.yml          # Continuous testing
+│       ├── 📄 publish.yml       # Package publishing
+│       └── 📄 docs.yml          # Documentation deployment
+├── 📄 pyproject.toml           # Package configuration & dependencies
+├── 📄 CONTRIBUTING.md          # Development contribution guide
+├── 📄 DEPLOYMENT.md            # Release and deployment guide
+├── 📄 CHANGELOG.md             # Version history and changes
+├── 📄 LICENSE                  # MIT license
+└── 📄 README.md                # This documentation
 ```
 
 ---
 
 ## 🚀 Development & Contributing
 
-### 🔧 Development Setup
+We welcome contributions to VCS Metrics! Whether you're fixing bugs, adding features, or improving documentation, here's how to get started.
+
+### 🛠️ Quick Development Setup
+
+<details>
+<summary><b>🖱️ Click to expand development setup</b></summary>
+
+<br>
 
 ```bash
-# Clone the repository
+# 1. Clone and setup
 git clone https://github.com/hdubey-debug/vcs.git
 cd vcs
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install in development mode
-pip install -e ".[dev]"
+# 2. Install development dependencies
+pip install -e .[dev]
 
-# Install pre-commit hooks
-pre-commit install
+# 3. Create your feature branch
+git checkout -b feature/your-feature-name
+
+# 4. Make your changes
+# Edit files in src/vcs/
+# Add tests if needed
+# Update docs if necessary
+
+# 5. Run quality checks
+black src/ && isort src/ && flake8 src/ && mypy src/
+
+# 6. Commit with semantic format
+git commit -m "minor: add new awesome feature"
+
+# 7. Push and create PR
+git push origin feature/your-feature-name
 ```
+
+</details>
+
+### 📋 Contribution Workflow
+
+<table align="center" width="100%">
+<tr>
+<td width="50%" align="center">
+
+### 🔄 **Development Process**
+
+<div style="background: linear-gradient(145deg, #dbeafe, #bfdbfe); padding: 20px; border-radius: 12px; border: 2px solid #3b82f6;">
+
+**1. Fork & Clone**  
+**2. Create Feature Branch**  
+**3. Make Changes**  
+**4. Write Tests**  
+**5. Submit PR**  
+**6. Code Review**  
+**7. Merge to Main**  
+
+✅ **Automated testing on every PR**  
+✅ **Fast feedback in ~2-3 minutes**
+
+</div>
+
+</td>
+<td width="50%" align="center">
+
+### 📦 **Release Process**
+
+<div style="background: linear-gradient(145deg, #ecfdf5, #d1fae5); padding: 20px; border-radius: 12px; border: 2px solid #059669;">
+
+**1. Semantic Commit Messages**  
+**2. GitHub Release Creation**  
+**3. Automated Version Calculation**  
+**4. Package Building**  
+**5. TestPyPI Publishing**  
+**6. Production Release**  
+
+🚀 **Industry-standard CI/CD pipeline**  
+⚡ **Zero manual version management**
+
+</div>
+
+</td>
+</tr>
+</table>
+
+### 💡 Semantic Commit Format
+
+We use semantic commits for automatic version bumping:
+
+<div align="center">
+<table style="border: 2px solid #7c3aed; border-radius: 12px; background: linear-gradient(145deg, #f3e8ff, #e9d5ff); padding: 15px; margin: 20px 0;">
+<tr>
+<td align="center">
+
+| **Commit Type** | **Version Bump** | **Example** |
+|:---|:---:|:---|
+| `patch: description` | Bug fixes | `1.0.4 → 1.0.5` |
+| `minor: description` | New features | `1.0.4 → 1.1.0` |
+| `major: description` | Breaking changes | `1.0.4 → 2.0.0` |
+
+</td>
+</tr>
+</table>
+</div>
+
+### 📖 Detailed Guides
+
+For comprehensive information about contributing and development:
+
+<div align="center">
+
+[![Contributing Guide](https://img.shields.io/badge/📖_Full_Contributing_Guide-2563eb?style=for-the-badge&logo=gitbook&logoColor=white)](./CONTRIBUTING.md)
+[![Deployment Guide](https://img.shields.io/badge/🚀_Deployment_Guide-059669?style=for-the-badge&logo=rocket&logoColor=white)](./DEPLOYMENT.md)
+
+</div>
+
+**📋 [CONTRIBUTING.md](./CONTRIBUTING.md)** - Complete development setup, coding standards, testing guidelines, and submission process.
+
+**🚀 [DEPLOYMENT.md](./DEPLOYMENT.md)** - Detailed CI/CD workflows, release process, version management, and troubleshooting.
+
+### 🤝 Getting Help
+
+<table align="center" width="100%">
+<tr>
+<td width="33%" align="center">
+
+**🐛 Bug Reports**  
+[Create GitHub Issue](https://github.com/hdubey-debug/vcs/issues)
+
+</td>
+<td width="33%" align="center">
+
+**💬 Questions**  
+[GitHub Discussions](https://github.com/hdubey-debug/vcs/discussions)
+
+</td>
+<td width="33%" align="center">
+
+**💡 Feature Requests**  
+[Feature Request Issue](https://github.com/hdubey-debug/vcs/issues/new)
+
+</td>
+</tr>
+</table>
+
+---
 
 ## 📚 Citation
 
