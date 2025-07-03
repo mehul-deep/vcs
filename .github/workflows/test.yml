@@ -152,12 +152,79 @@ jobs:
             print(f"NAS Score: {result['NAS']:.4f}")
             print("✅ Getting started example works correctly!")
             
-            # Test visualization (should not fail the test if it errors)
-            try:
-                fig = vcs.visualize_metrics_summary(result['internals'])
-                print("📊 Visualization test passed!")
-            except Exception as viz_error:
-                print(f"⚠️ Visualization test failed (non-critical): {viz_error}")
+            # Test all public APIs dynamically
+            print("🧪 Testing all public APIs...")
+            
+            internals = result['internals']
+            api_test_results = {}
+            
+            for api_name in vcs.__all__:
+                try:
+                    api_func = getattr(vcs, api_name)
+                    
+                    # Categorize APIs dynamically based on naming patterns and type
+                    if api_name == 'compute_vcs_score':
+                        api_test_results[api_name] = "✅ Already tested (main functionality)"
+                        
+                    elif api_name.startswith('DEFAULT_'):
+                        # Configuration constants
+                        api_test_results[api_name] = "✅ Already tested (configuration)"
+                        
+                    elif api_name.startswith('__') and api_name.endswith('__'):
+                        # Metadata attributes (__version__, __author__, etc.)
+                        if api_func is not None:
+                            api_test_results[api_name] = "✅ Metadata accessible"
+                        else:
+                            api_test_results[api_name] = "❌ Metadata is None"
+                            
+                    elif api_name.startswith('visualize_') or api_name == 'create_vcs_pdf_report':
+                        # Visualization/reporting functions - test with internals
+                        if api_name == 'create_vcs_pdf_report':
+                            # PDF report needs special parameters
+                            result_obj = api_func(internals=internals, output_file='/tmp/test_report.pdf')
+                        else:
+                            # Standard visualization functions
+                            result_obj = api_func(internals)
+                        
+                        api_test_results[api_name] = "✅ Executed successfully"
+                        
+                    elif callable(api_func):
+                        # Unknown callable - attempt basic execution
+                        import inspect
+                        sig = inspect.signature(api_func)
+                        
+                        if len(sig.parameters) == 0:
+                            # No parameters required
+                            result_obj = api_func()
+                            api_test_results[api_name] = "✅ Function executed (no params)"
+                        else:
+                            # Has parameters - try with internals if it seems like a viz function
+                            if 'internals' in [p.name for p in sig.parameters.values()]:
+                                result_obj = api_func(internals)
+                                api_test_results[api_name] = "✅ Executed with internals"
+                            else:
+                                # Can't determine parameters - skip execution but mark as callable
+                                api_test_results[api_name] = "⚠️ Callable but requires unknown parameters"
+                    else:
+                        # Non-callable value (constants, etc.)
+                        api_test_results[api_name] = "✅ Value accessible"
+                            
+                except Exception as e:
+                    api_test_results[api_name] = f"❌ Failed: {str(e)[:50]}..."
+            
+            # Report API test results
+            print("📊 Public API Test Results:")
+            failed_apis = []
+            for api_name, result_msg in api_test_results.items():
+                print(f"  {api_name}: {result_msg}")
+                if result_msg.startswith("❌"):
+                    failed_apis.append(api_name)
+            
+            if failed_apis:
+                print(f"❌ {len(failed_apis)} APIs failed: {failed_apis}")
+                exit(1)
+            else:
+                print(f"✅ All {len(api_test_results)} public APIs tested successfully!")
             
         except Exception as e:
             print(f"❌ Getting started example failed: {e}")
