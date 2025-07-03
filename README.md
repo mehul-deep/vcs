@@ -798,6 +798,82 @@ We use semantic commits for automatic version bumping:
 </table>
 </div>
 
+### 🔧 Automated Testing & CI/CD
+
+Our comprehensive CI/CD pipeline ensures code quality and reliability on every commit:
+
+<table align="center" width="100%">
+<tr>
+<td width="50%" align="center">
+
+### 🚀 **What Gets Tested**
+
+<div style="background: linear-gradient(145deg, #ecfdf5, #d1fae5); padding: 20px; border-radius: 12px; border: 2px solid #059669;">
+
+**✅ Matrix Testing**
+- Python 3.11 & 3.12 compatibility
+
+**✅ Package Validation**
+- Import testing & API availability
+- Configuration value verification
+
+**✅ Integration Testing**
+- Full getting-started example
+- Dynamic API testing
+
+**✅ Code Quality**
+- Flake8 linting & complexity checks
+
+**✅ Build Testing**
+- Package build verification
+
+</div>
+
+</td>
+<td width="50%" align="center">
+
+### ⚡ **Run Tests Locally**
+
+<div style="background: linear-gradient(145deg, #dbeafe, #bfdbfe); padding: 20px; border-radius: 12px; border: 2px solid #3b82f6;">
+
+```bash
+# Install development dependencies
+pip install -e .[dev]
+
+# Run all quality checks
+flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+
+# Test package build
+python -m build
+
+# Test package functionality
+python -c "import vcs; print(f'VCS v{vcs.__version__}')"
+```
+
+**🔄 Triggers:** Every push and pull request to `main`
+
+</div>
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+<table style="border: 2px solid #059669; border-radius: 12px; background: linear-gradient(145deg, #ecfdf5, #d1fae5); padding: 15px; margin: 20px 0;">
+<tr>
+<td align="center">
+
+[![Tests](https://img.shields.io/github/actions/workflow/status/hdubey-debug/vcs/test.yml?branch=main&label=Tests&logo=github-actions&logoColor=white&style=for-the-badge)](https://github.com/hdubey-debug/vcs/actions/workflows/test.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/hdubey-debug/vcs/publish.yml?label=Build&logo=github-actions&logoColor=white&style=for-the-badge)](https://github.com/hdubey-debug/vcs/actions/workflows/publish.yml)
+
+**✅ Automated testing ensures every change is production-ready**
+
+</td>
+</tr>
+</table>
+</div>
+
 ### 📖 Detailed Guides
 
 For comprehensive information about contributing and development:
