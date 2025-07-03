@@ -25,9 +25,6 @@
 </p>
 
 ---
-
-**Evaluate narrative similarity between reference and generated text using state-of-the-art metrics.**
-
 ## 🌟 Key Features
 
 Click on a feature to learn more.
