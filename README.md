@@ -86,18 +86,6 @@ Click on a feature to learn more.
 
 </div>
 
-<div align="center">
-
-```mermaid
-graph LR
-    A[🚀 Install] --> B[⚙️ Configure] --> C[🧠 Analyze] --> D[📊 Visualize]
-    style A fill:#1e40af,stroke:#3b82f6,stroke-width:2px,color:#fff
-    style B fill:#059669,stroke:#10b981,stroke-width:2px,color:#fff
-    style C fill:#dc2626,stroke:#ef4444,stroke-width:2px,color:#fff
-    style D fill:#7c3aed,stroke:#8b5cf6,stroke-width:2px,color:#fff
-```
-
-</div>
 
 ---
 
@@ -284,25 +272,6 @@ VCS Metrics needs PyTorch but doesn't install it automatically to avoid conflict
 
 </div>
 
-<div align="center">
-
-```mermaid
-graph TB
-    A[📝 Raw Text] --> B[🔪 Segmenter Function]
-    B --> C[📋 Text Segments]
-    C --> D[🧠 Embedding Function]
-    D --> E[🔢 Vector Embeddings]
-    E --> F[⚡ VCS Analysis]
-    
-    style A fill:#f3f4f6,stroke:#374151,stroke-width:2px
-    style B fill:#fef3c7,stroke:#f59e0b,stroke-width:2px
-    style C fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
-    style D fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px
-    style E fill:#ecfdf5,stroke:#059669,stroke-width:2px
-    style F fill:#fef2f2,stroke:#dc2626,stroke-width:2px
-```
-
-</div>
 
 <table align="center" width="100%">
 <tr>
@@ -693,23 +662,6 @@ except Exception as e:
 
 </div>
 
-<div align="center">
-
-```mermaid
-graph LR
-    A[🎛️ Parameters] --> B[🎯 Precision Control]
-    A --> C[📊 Granularity Tuning]
-    A --> D[🔄 Context Management]
-    A --> E[⚡ Performance Optimization]
-    
-    style A fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff
-    style B fill:#059669,stroke:#047857,stroke-width:2px,color:#fff
-    style C fill:#dc2626,stroke:#b91c1c,stroke-width:2px,color:#fff
-    style D fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff
-    style E fill:#ea580c,stroke:#c2410c,stroke-width:2px,color:#fff
-```
-
-</div>
 
 <table align="center" width="100%">
 <tr>
