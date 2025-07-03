@@ -80,20 +80,6 @@ Explore the comprehensive capabilities that make VCS a powerful narrative evalua
       </details>
     </td>
   </tr>
-  <tr style="background-color: transparent;">
-    <td style="padding: 10px; border: none; vertical-align: top;">
-      <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">🔬 Research-Grade Analysis</summary>
-        <p style="padding-top: 10px;">Designed for academic research with rigorous evaluation methodology. Handles any text length, provides reproducible results, and includes detailed algorithm explanations. Perfect for video captioning evaluation and narrative analysis studies.</p>
-      </details>
-    </td>
-    <td style="padding: 10px; border: none; vertical-align: top;">
-      <details style="border: 1px solid #14b8a6; border-radius: 12px; padding: 20px; background: linear-gradient(145deg, #1f2937, #111827); color: #e5e7eb; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.2em; color: #6ee7b7;">🚀 Production-Ready Performance</summary>
-        <p style="padding-top: 10px;">Memory-efficient implementation with batch processing capabilities. Scalable for large-scale text comparison tasks. Comprehensive error handling and validation for reliable production deployment.</p>
-      </details>
-    </td>
-  </tr>
 </table>
 
 ---
@@ -918,21 +904,6 @@ If you use VCS Metrics in your research, please cite:
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/hdubey-debug/vcs?style=for-the-badge&color=ff6b6b&labelColor=0f172a)](https://github.com/hdubey-debug/vcs/pulse)
 [![Last Commit](https://img.shields.io/github/last-commit/hdubey-debug/vcs?style=for-the-badge&color=4ecdc4&labelColor=0f172a)](https://github.com/hdubey-debug/vcs/commits)
 [![Code Frequency](https://img.shields.io/github/languages/count/hdubey-debug/vcs?style=for-the-badge&color=f9ca24&labelColor=0f172a)](https://github.com/hdubey-debug/vcs)
-
-### 🎯 **Want to Contribute?**
-
-We're always looking for passionate developers and researchers to join our mission!
-
-[![Contribute](https://img.shields.io/badge/👨‍💻_Join_the_Team-Contribute_Now-14b8a6?style=for-the-badge&logo=github)](https://github.com/hdubey-debug/vcs/blob/main/CONTRIBUTING.md)
-[![Issues](https://img.shields.io/badge/🐛_Find_Bugs-Good_First_Issues-ff6b6b?style=for-the-badge&logo=github)](https://github.com/hdubey-debug/vcs/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-[![Features](https://img.shields.io/badge/💡_Suggest_Ideas-Feature_Requests-4ecdc4?style=for-the-badge&logo=lightbulb)](https://github.com/hdubey-debug/vcs/issues/new?assignees=&labels=enhancement&template=feature_request.md)
-
-**Areas where we need help:**
-- 🧪 Testing on diverse datasets
-- 🌐 Multi-language support 
-- ⚡ Performance optimizations
-- 📚 Documentation improvements
-- 🎨 UI/UX enhancements
 
 </div>
 
