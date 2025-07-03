@@ -60,23 +60,6 @@ Click on a feature to learn more.
   </tr>
 </table>
 
----
-
-## 🚀 Quick Access Dashboard
-
-<div align="center">
-
-| 🎯 **Action** | 🔗 **Direct Link** | ⚡ **One-Click Access** |
-|:---|:---|:---|
-| 🧪 **Try VCS Now** | [Interactive Playground](https://hdubey-debug.github.io/vcs/) | [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/hdubey-debug/vcs/blob/main/examples/vcs_demo.ipynb) |
-| 📊 **See Examples** | [Live Examples](https://hdubey-debug.github.io/vcs/) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/hdubey-debug/vcs/main?filepath=examples) |
-| 📖 **Full Docs** | [Complete Documentation](https://hdubey-debug.github.io/vcs/) | [![Docs](https://img.shields.io/badge/docs-latest-teal?style=flat-square)](https://hdubey-debug.github.io/vcs/) |
-| 📦 **Install Package** | [PyPI Package](https://pypi.org/project/vcs-metrics/) | [![Install](https://img.shields.io/badge/pip%20install-vcs--metrics-teal?style=flat-square)](https://pypi.org/project/vcs-metrics/) |
-
-</div>
-
----
-
 ## ⚡ Quick Start
 
 ### 📦 Installation
