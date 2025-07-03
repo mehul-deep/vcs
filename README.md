@@ -1,36 +1,30 @@
 <div align="center">
+  <h1 align="center">Video Comprehension Score (VCS)</h1>
   <a href="https://github.com/hdubey-debug/vcs">
     <img src=".github/assets/vcs-process-flow.png" alt="VCS Process Flow" width="700"/>
   </a>
-  <h1 align="center">Video Comprehension Score (VCS)</h1>
   <p align="center">
-    <em>A Comprehensive Python Library for Narrative Similarity Evaluation</em>
+    <em>A Comprehensive Python Library for Narrative Similarity Evaluation between two very long descriptions </em>
     <br />
-    <a href="https://hdubey-debug.github.io/vcs/"><strong>🚀 Explore the Docs »</strong></a>
   </p>
 </div>
 
 <div align="center">
 
 [![PyPI version](https://img.shields.io/pypi/v/vcs-metrics?color=teal&style=for-the-badge)](https://badge.fury.io/py/vcs-metrics)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-teal?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-teal?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-teal?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-github.io-teal?style=for-the-badge&logo=gitbook&logoColor=white)](https://hdubey-debug.github.io/vcs/)
 
 </div>
 
 <p align="center">
-  <a href="https://hdubey-debug.github.io/vcs/playground.html">🧪 Interactive Playground</a>
-  ·
   <a href="https://github.com/hdubey-debug/vcs/issues">🐛 Report Bug</a>
   ·
   <a href="https://github.com/hdubey-debug/vcs/discussions">💬 Community Q&A</a>
 </p>
 
 ---
-
-**Evaluate narrative similarity between reference and generated text using state-of-the-art metrics.**
-
 ## 🌟 Key Features
 
 Click on a feature to learn more.
@@ -503,44 +497,6 @@ result = compute_vcs_score(
 
 ## 📈 Performance & Benchmarks
 
-<div align="center">
-
-### ⚡ Speed Performance
-| **Text Length** | **Processing Time** | **Memory Usage** | **Throughput** |
-|:---:|:---:|:---:|:---:|
-| 100 words | ~0.2s | 50MB | 500 texts/min |
-| 1K words | ~1.5s | 120MB | 40 texts/min |
-| 10K words | ~12s | 800MB | 5 texts/min |
-
-### 🎯 Accuracy Comparison
-| **Metric** | **VCS** | **BLEU** | **ROUGE** | **BERTScore** |
-|:---:|:---:|:---:|:---:|:---:|
-| **Narrative Structure** | ✅ 95% | ❌ 45% | ❌ 52% | ❌ 67% |
-| **Semantic Similarity** | ✅ 92% | ❌ 71% | ✅ 89% | ✅ 88% |
-| **Long-form Coherence** | ✅ 94% | ❌ 38% | ❌ 61% | ❌ 73% |
-
-</div>
-
----
-
-## 🎯 Understanding VCS Metrics
-
-<div align="center">
-
-### 🌟 **VCS (Video Comprehension Score)**
-*The ultimate metric combining all aspects of text similarity*
-
-| **Metric** | **Purpose** | **What it Measures** |
-|:---:|:---|:---|
-| **🌍 GAS** | Global Alignment | Semantic similarity between complete texts |
-| **🎯 LAS** | Local Alignment | Segment-level similarity with optimal matching |
-| **📖 NAS** | Narrative Alignment | Preservation of narrative structure and flow |
-| **📏 NAS-D** | Distance-based | Penalizes segments aligned far from expected positions |
-| **📈 NAS-L** | Line-based | Evaluates smoothness of the alignment path |
-
-</div>
-
----
 
 ## 🛠️ Requirements
 
@@ -628,22 +584,6 @@ pip install -e ".[dev]"
 # Install pre-commit hooks
 pre-commit install
 ```
-
-### 🎨 Code Formatting
-
-```bash
-# Format code
-black src/
-isort src/
-
-# Run linting
-flake8 src/
-
-# Type checking
-mypy src/
-```
-
----
 
 ## 📚 Citation
 
