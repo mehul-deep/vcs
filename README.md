@@ -855,50 +855,39 @@ If you use VCS Metrics in your research, please cite:
 
 ---
 
-## 🏆 Meet Our Contributors
+## Contributors ✨
 
-<div align="center">
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
-### 🌟 **The VCS Team - Building the Future of Text Similarity**
-
-</div>
-
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
 <table>
-<tr>
-<td align="center">
-
-<a href="https://github.com/hdubey-debug">
-  <img src="https://github.com/hdubey-debug.png" width="100" height="100" style="border-radius: 50%;"/>
-</a>
-
-**Harsh Dubey**  
-*Lead Developer & Research Scientist*  
-*South Dakota State University*
-
-| Commits | Lines | Files |
-|:---:|:---:|:---:|
-| **126** | **30K** | **95** |
-
-**📋 Key Work:**
-• VCS Algorithm Architecture  
-• Visualization Engine  
-• LAS, GAS, and NAS Metrics  
-
-[![GitHub](https://img.shields.io/badge/-GitHub-14b8a6?style=flat&logo=github)](https://github.com/hdubey-debug)
-
-</td>
-</tr>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="25%">
+        <a href="https://github.com/hdubey-debug">
+          <img src="https://avatars.githubusercontent.com/u/62215781?v=4" width="100px;" alt=""/>
+          <br />
+          <sub><b>Harsh Dubey</b></sub>
+        </a>
+        <br />
+        <a href="#founder-hdubey-debug" title="Project Founder & Original Developer">👑</a> <a href="#vcs-algorithm-hdubey-debug" title="VCS Algorithm & Core Metrics">🧮</a> <a href="#visualization-hdubey-debug" title="Visualization Engine & PDF Reports">📊</a> <a href="#doc-hdubey-debug" title="Documentation & Tutorials">📖</a> <a href="#infra-hdubey-debug" title="Testing, CI/CD & Infrastructure">🏗️</a> <a href="#code-hdubey-debug" title="Code contributions">💻</a> <a href="#design-hdubey-debug" title="Design & Architecture">🎨</a>
+      </td>
+    </tr>
+  </tbody>
 </table>
 
-<div align="center">
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
 
-### 🤖 **Automated Contributors**
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
-| **Contributor** | **Role** | **Contributions** | **Badge** |
-|:---:|:---:|:---:|:---:|
-| 🤖 **GitHub Actions** | CI/CD Automation | 3 commits | [![Bot](https://img.shields.io/badge/Bot-Automated_Testing-6c5ce7?style=flat&logo=github-actions&logoColor=white)](#) |
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
 
 ### 📊 **Contribution Analytics**
+
+<div align="center">
 
 [![Contributors](https://img.shields.io/github/contributors/hdubey-debug/vcs?style=for-the-badge&color=14b8a6&labelColor=0f172a)](https://github.com/hdubey-debug/vcs/graphs/contributors)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/hdubey-debug/vcs?style=for-the-badge&color=ff6b6b&labelColor=0f172a)](https://github.com/hdubey-debug/vcs/pulse)
