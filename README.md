@@ -118,40 +118,6 @@ print(f"📖 NAS Score: {result['NAS']:.4f}")
 
 </details>
 
-### 🚀 Advanced Usage with State-of-the-Art Models
-
-```python
-from sentence_transformers import SentenceTransformer
-import nltk
-
-# Download NLTK data
-nltk.download('punkt')
-
-# Initialize SOTA model
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-def sentence_segmenter(text):
-    return nltk.sent_tokenize(text)
-
-def sbert_embedding_function(texts):
-    embeddings = model.encode(texts)
-    return torch.tensor(embeddings)
-
-# Compute with better embeddings
-result = compute_vcs_score(
-    reference_text=reference_text,
-    generated_text=generated_text,
-    segmenter_fn=sentence_segmenter,
-    embedding_fn_las=sbert_embedding_function,
-    embedding_fn_gas=sbert_embedding_function,
-    chunk_size=1,
-    context_cutoff_value=0.6,
-    context_window_control=4.0,
-    return_all_metrics=True,
-    return_internals=True
-)
-```
-
 ### 📊 Generating Visualizations
 
 ```python
@@ -183,14 +149,6 @@ if 'internals' in result:
 ## 📈 Performance & Benchmarks
 
 <div align="center">
-
-### ⚡ Speed Performance
-| **Text Length** | **Processing Time** | **Memory Usage** | **Throughput** |
-|:---:|:---:|:---:|:---:|
-| 100 words | ~0.2s | 50MB | 500 texts/min |
-| 1K words | ~1.5s | 120MB | 40 texts/min |
-| 10K words | ~12s | 800MB | 5 texts/min |
-
 ### 🎯 Accuracy Comparison
 | **Metric** | **VCS** | **BLEU** | **ROUGE** | **BERTScore** |
 |:---:|:---:|:---:|:---:|:---:|
@@ -199,27 +157,6 @@ if 'internals' in result:
 | **Long-form Coherence** | ✅ 94% | ❌ 38% | ❌ 61% | ❌ 73% |
 
 </div>
-
----
-
-## 🎯 Understanding VCS Metrics
-
-<div align="center">
-
-### 🌟 **VCS (Video Comprehension Score)**
-*The ultimate metric combining all aspects of text similarity*
-
-| **Metric** | **Purpose** | **What it Measures** |
-|:---:|:---|:---|
-| **🌍 GAS** | Global Alignment | Semantic similarity between complete texts |
-| **🎯 LAS** | Local Alignment | Segment-level similarity with optimal matching |
-| **📖 NAS** | Narrative Alignment | Preservation of narrative structure and flow |
-| **📏 NAS-D** | Distance-based | Penalizes segments aligned far from expected positions |
-| **📈 NAS-L** | Line-based | Evaluates smoothness of the alignment path |
-
-</div>
-
----
 
 ## 🛠️ Requirements
 
@@ -307,22 +244,6 @@ pip install -e ".[dev]"
 # Install pre-commit hooks
 pre-commit install
 ```
-
-### 🎨 Code Formatting
-
-```bash
-# Format code
-black src/
-isort src/
-
-# Run linting
-flake8 src/
-
-# Type checking
-mypy src/
-```
-
----
 
 ## 📚 Citation
 
