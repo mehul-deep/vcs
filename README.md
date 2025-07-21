@@ -644,6 +644,113 @@ result = compute_vcs_score(
 
 ---
 
+## 🎬 Animation Gallery
+
+**NEW! Educational Manim animations demonstrating VCS concepts**
+
+<div align="center">
+<table style="border: 2px solid #7c3aed; border-radius: 12px; background: linear-gradient(145deg, #f3e8ff, #e9d5ff); padding: 20px; margin: 20px 0;">
+<tr>
+<td align="center">
+
+### 🎥 **Interactive Learning Through Animation**
+
+**9 comprehensive animations** illustrating core VCS concepts and algorithms. Perfect for education, presentations, and research dissemination.
+
+[![Animation Gallery](https://img.shields.io/badge/🎬_View_Animation_Gallery-7c3aed?style=for-the-badge&logo=play&logoColor=white)](#animation-details)
+
+</td>
+</tr>
+</table>
+</div>
+
+### 🎯 **Available Animations**
+
+<table align="center" width="100%">
+<tr>
+<td width="50%">
+
+#### **🧮 Core Algorithms**
+
+| Animation | Description | File |
+|:----------|:------------|:-----|
+| **VCS Overview** | Complete Video Comprehension Score calculation | `VCS.py` |
+| **Best Matching** | Optimal segment pairing algorithm | `Best_Matching.py` |
+| **Segmentation** | Text segmentation component | `SC.py` |
+
+</td>
+<td width="50%">
+
+#### **📊 Metric Components**
+
+| Animation | Description | File |
+|:----------|:------------|:-----|
+| **Line Alignment** | Line Alignment Score (LAS) | `LAS.py` |
+| **Narrative Distance** | Narrative Alignment Score Distance | `NASD.py` |
+| **Semantic Alignment** | Semantic Alignment Score (SAS) | `SAS.py` |
+
+</td>
+</tr>
+</table>
+
+#### **🔄 Block Matching Algorithm Series**
+
+| Animation | Description | Use Case | File |
+|:----------|:------------|:---------|:-----|
+| **BMA Case 1** | Reference vs Reference comparison | Perfect matching baseline | `BMA_Case1.py` |
+| **BMA Case 2** | Reference vs Generated comparison | Realistic evaluation scenario | `BMA_Case2.py` |
+| **BMA Case 3** | Advanced matching scenarios | Complex narrative alignment | `BMA_Case3.py` |
+
+### 🚀 **Running Animations**
+
+<details>
+<summary><b>🖱️ Click to expand animation setup and usage</b></summary>
+
+<br>
+
+#### **📦 Installation for Animations**
+
+```bash
+# Install animation dependencies (includes Manim)
+pip install -r requirements-demo.txt
+
+# System dependencies (Linux/WSL)
+sudo apt-get install ffmpeg
+```
+
+#### **🎥 Generate Individual Animations**
+
+```bash
+# Navigate to animations directory
+cd animations/
+
+# Generate specific animation (high quality)
+python -m manim -qh --disable_caching VCS.py FullConceptAnimation
+
+# Generate all animations (batch processing)
+for script in *.py; do
+    echo "Generating animation for $script..."
+    python -m manim -qh --disable_caching "$script" FullConceptAnimation
+done
+```
+
+#### **⚙️ Quality Options**
+
+| Flag | Quality | Resolution | Use Case |
+|:-----|:--------|:-----------|:---------|
+| `-ql` | Low | 480p | Quick previews |
+| `-qm` | Medium | 720p | General use |
+| `-qh` | High | 1080p | Presentations |
+| `-qk` | 4K | 2160p | Publications |
+
+#### **📹 Pre-generated Videos**
+
+Pre-rendered animations are available in the [`videos/`](videos/) directory - perfect for immediate use in presentations and educational materials!
+
+</details>
+
+---
+
 ## 🏗️ Project Structure
 
 ```
@@ -667,6 +774,28 @@ vcs/
 │   ├── 📁 _matching/            # Optimal text matching algorithms
 │   ├── 📁 _mapping_windows/     # Context window management
 │   └── 📁 _utils/               # Helper utilities
+├── 📁 animations/               # 🎬 NEW! Manim animation scripts
+│   ├── 📄 VCS.py               # Complete VCS calculation demo
+│   ├── 📄 Best_Matching.py     # Best matching algorithm visualization
+│   ├── 📄 BMA_Case1.py         # Block matching case 1 (REF vs REF)
+│   ├── 📄 BMA_Case2.py         # Block matching case 2 (REF vs GEN)
+│   ├── 📄 BMA_Case3.py         # Block matching case 3 (Advanced)
+│   ├── 📄 LAS.py               # Line Alignment Score demo
+│   ├── 📄 NASD.py              # Narrative Alignment Distance
+│   ├── 📄 SAS.py               # Semantic Alignment Score
+│   ├── 📄 SC.py                # Segmentation Component
+│   └── 📄 README.md            # Animation documentation
+├── 📁 videos/                   # 🎥 Pre-generated MP4 animations
+│   ├── 📄 VCS.mp4              # Complete VCS demonstration (~4MB)
+│   ├── 📄 Best_Matching.mp4    # Best matching visualization (~6MB)
+│   ├── 📄 BMA_Case1.mp4        # Case 1 animation (~6MB)
+│   ├── 📄 BMA_Case2.mp4        # Case 2 animation (~6MB)
+│   ├── 📄 BMA_Case3.mp4        # Case 3 animation (~8MB)
+│   ├── 📄 LAS.mp4              # LAS demonstration (~500KB)
+│   ├── 📄 NASD.mp4             # NASD visualization (~4MB)
+│   ├── 📄 SAS.mp4              # SAS animation (~900KB)
+│   ├── 📄 SC.mp4               # SC demonstration (~3MB)
+│   └── 📄 README.md            # Video documentation
 ├── 📁 docs/                     # Documentation and interactive demos
 │   ├── 📄 index.html            # Main documentation website
 │   ├── 📁 pages/                # Documentation pages
@@ -677,10 +806,12 @@ vcs/
 │   ├── 📁 sphinx/               # Sphinx documentation source
 │   └── 📁 assets/               # Documentation assets (CSS, JS, videos)
 ├── 📁 .github/                  # GitHub configuration
-│   └── 📁 workflows/            # CI/CD automation pipelines
+│   └── 📁 workflows/            # 🚀 Enhanced CI/CD automation
+│       ├── 📄 ci-cd.yml         # 🆕 Complete CI/CD pipeline with animations
 │       ├── 📄 test.yml          # Continuous testing
 │       ├── 📄 publish.yml       # Package publishing
 │       └── 📄 docs.yml          # Documentation deployment
+├── 📄 requirements-demo.txt     # 🆕 Animation dependencies (Manim + others)
 ├── 📄 pyproject.toml           # Package configuration & dependencies
 ├── 📄 CONTRIBUTING.md          # Development contribution guide
 ├── 📄 DEPLOYMENT.md            # Release and deployment guide
@@ -798,24 +929,51 @@ We use semantic commits for automatic version bumping:
 </table>
 </div>
 
-### 🔧 Automated Testing & CI/CD
+### 🔧 Enhanced CI/CD Pipeline with Animation Generation
 
-Our comprehensive CI/CD pipeline ensures code quality and reliability on every commit:
+Our comprehensive CI/CD pipeline ensures code quality, reliability, and educational content generation:
 
 <div align="center">
 <table style="border: 2px solid #059669; border-radius: 12px; background: linear-gradient(145deg, #ecfdf5, #d1fae5); padding: 20px; margin: 20px 0;">
 <tr>
 <td align="center">
 
-### 🚀 **What Gets Tested**
+### 🚀 **Complete CI/CD Features**
 
-**✅ Matrix Testing** - Python 3.11 & 3.12 compatibility  
+**✅ Multi-Python Testing** - Python 3.9, 3.10, 3.11, 3.12 compatibility  
 **✅ Package Validation** - Import testing & API availability  
-**✅ Integration Testing** - Full getting-started example  
-**✅ Code Quality** - Flake8 linting & complexity checks  
-**✅ Build Testing** - Package build verification  
+**✅ Integration Testing** - Full getting-started example validation  
+**✅ Code Quality Gates** - Black, isort, flake8, mypy enforcement  
+**✅ Build & Distribution** - Wheel/source dist creation & testing  
+**🎬 Animation Generation** - Automatic Manim video creation  
+**🔒 Security Scanning** - Bandit & safety vulnerability checks  
+**📚 Documentation** - Sphinx docs building & preview  
+**🚀 Release Automation** - Smart releases with bundled assets  
 
-**🔄 Triggers:** Every push and pull request to `main`
+**🔄 Triggers:** Every push, PR, and weekly scheduled runs
+
+</td>
+</tr>
+</table>
+</div>
+
+#### **🎥 Automated Animation Pipeline**
+
+<div align="center">
+<table style="border: 2px solid #7c3aed; border-radius: 12px; background: linear-gradient(145deg, #f3e8ff, #e9d5ff); padding: 15px; margin: 20px 0;">
+<tr>
+<td align="center">
+
+**NEW! Automated Animation Generation**
+
+Every push to `main` automatically:
+- 🎬 Generates all 9 animations (VCS, BMA cases, metrics)
+- 📦 Uploads videos as workflow artifacts (30-day retention)
+- 🚀 Includes animations in GitHub releases
+- ⚡ Uses continue-on-error for robust builds
+- 📊 Provides detailed generation logs
+
+**Perfect for:** Keeping animations up-to-date with code changes!
 
 </td>
 </tr>
